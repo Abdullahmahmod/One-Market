@@ -1,0 +1,69 @@
+﻿<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>عربة التسوق - One market</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="main.css">
+  <link rel="stylesheet" href="responsive.css">
+</head>
+<body>
+  <!-- ===== Header ===== -->
+  <header>
+    <div class="site-brand">
+      <h1> One market</h1>
+      <p>خضار طازة يومياً</p>
+    </div>
+    <nav class="site-nav">
+      <a href="index.html">الرئيسية</a>
+      <a href="shop.html">المتجر</a>
+      <a href="about.html">عن المتجر</a>
+      <a href="checkout.html">الدفع</a>
+      <a href="cart.html">العربة</a>
+    </nav>
+  </header>
+
+  <!-- ===== Cart Page Container ===== -->
+  <main class="cart-page">
+    <div class="cart-wrapper">
+      <button class="back-button" onclick="history.back()">← العودة للشراء</button>
+      
+      <div class="cart-content-wrapper">
+        <!-- ===== Left Column: Package Summary ===== -->
+        <div class="package-summary-column">
+          <h2 class="cart-title">🛒 ملخص الطلب</h2>
+          <div id="cartContent" class="cart-content">
+            <div class="empty-cart-message">
+              <div class="empty-cart-icon">🛒</div>
+              <div class="empty-cart-text">العربة فارغة</div>
+              <a href="index.html" class="continue-shopping-btn">ابدأ التسوق</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== Right Column: Checkout CTA ===== -->
+        <div class="order-form-column">
+          <h2 class="form-title-main">الدفع</h2>
+          <div class="form-section">
+            <p class="cart-helper">راجع طلبك ثم انتقل للدفع.</p>
+            <button id="goToCheckout" class="submit-button" type="button">تابع للدفع</button>
+            <p id="checkoutNote" class="cart-note">اختر باقة أولاً.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== Footer ===== -->
+  <footer>
+    <p>&copy; 2026 One market - جميع الحقوق محفوظة</p>
+  </footer>
+<!-- Scripts in order: config → utils → main -->
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

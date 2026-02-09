@@ -1,0 +1,112 @@
+/* responsive.css
+	مخصص لقواعد الاستجابة إن احتجت لفصلها مستقبلاً.
+	حالياً تم دمج قواعد الاستجابة الأساسية داخل theme.css.
+	اترك هذا الملف كملف مكان احتياطي أو أضف تعديلات خاصة بالأجهزة الصغيرة هنا.
+*/
+
+@media (max-width: 600px) {
+  body {
+    background:
+      radial-gradient(900px 320px at 50% -10%, rgba(212, 162, 74, 0.22), transparent 60%),
+      linear-gradient(180deg, #fbf7ef 0%, #f4efe4 100%);
+  }
+
+  header {
+    margin: 10px 10px 18px;
+    padding: 16px 14px;
+    border-radius: 18px;
+    gap: 12px;
+  }
+
+  header h1 {
+    font-size: 1.55rem;
+  }
+
+  header p {
+    font-size: 0.9rem;
+  }
+
+  .site-nav {
+    gap: 6px;
+    padding: 6px 0 2px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .site-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .site-nav a {
+    font-size: 0.85rem;
+    padding: 8px 12px;
+    white-space: nowrap;
+  }
+
+  .cart-icon-header {
+    align-self: flex-start;
+    font-size: 0.95rem;
+  }
+
+  .container {
+    padding: 0 12px;
+  }
+
+  .section-title {
+    font-size: 1.55rem;
+    margin-bottom: 18px;
+  }
+
+  .packages-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .package-card {
+    padding: 18px;
+    border-radius: 16px;
+  }
+
+  .package-emoji {
+    font-size: 2.6rem;
+  }
+
+  .package-name {
+    font-size: 1.2rem;
+  }
+
+  .package-desc {
+    font-size: 0.9rem;
+  }
+
+  .package-items-list {
+    margin: 10px 0 12px;
+  }
+
+  .package-items-list li {
+    grid-template-columns: 1fr auto;
+    row-gap: 6px;
+    padding: 10px 0;
+  }
+
+  .package-item-unit {
+    grid-column: 1 / -1;
+    text-align: right;
+    font-size: 0.82rem;
+  }
+
+  .qty-input {
+    width: 72px;
+    font-size: 1rem;
+  }
+
+  .package-price {
+    font-size: 1.5rem;
+  }
+
+  .btn-select {
+    padding: 12px 16px;
+    font-size: 1rem;
+  }
+}

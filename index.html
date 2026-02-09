@@ -1,0 +1,202 @@
+﻿<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>One market</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="main.css">
+  <link rel="stylesheet" href="responsive.css">
+</head>
+<body>
+  <!-- ===== Header ===== -->
+  <header>
+    <div class="site-brand">
+      <h1> One market</h1>
+      <p>خضار طازة يومياً — اختر الباقة المناسبة لك</p>
+    </div>
+    <nav class="site-nav">
+      <a href="index.html">الرئيسية</a>
+      <a href="shop.html">المتجر</a>
+      <a href="about.html">عن المتجر</a>
+      <a href="checkout.html">الدفع</a>
+      <a href="cart.html">العربة</a>
+    </nav>
+    <a href="cart.html" class="cart-icon-header">
+      <span class="cart-icon">🛒</span>
+      <span class="cart-count" id="cartCount">0</span>
+    </a>
+  </header>
+
+  <!-- ===== Main Container ===== -->
+  <div class="container">
+        <!-- ===== Packages Showcase ===== -->
+    <section class="packages-showcase">
+      <h2 class="section-title">✨ اختر الباقة المناسبة لك</h2>
+      <div class="packages-grid">
+
+        <!-- ===== Weekly Package ===== -->
+        <div class="package-card" data-package="week">
+          <div class="package-emoji">📦</div>
+          <h3 class="package-name">باقة أسبوعية</h3>
+          <p class="package-desc">توصيل أسبوعي منتظم</p>
+          <ul class="package-items-list">
+            <li><span class="package-item-name">🍅 طماطم</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="tomato" title="كمية الطماطم" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="tomato">—</span></li>
+            <li><span class="package-item-name">🧅 بصل أبيض</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="white_onion" title="كمية البصل الأبيض" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="white_onion">—</span></li>
+            <li><span class="package-item-name">🧅 بصل أحمر</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="red_onion" title="كمية البصل الأحمر" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="red_onion">—</span></li>
+            <li><span class="package-item-name">🥒 خيار</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="cucumber" title="كمية الخيار" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="cucumber">—</span></li>
+            <li><span class="package-item-name">🥒 كوسة</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="zucchini" title="كمية الكوسة" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="zucchini">—</span></li>
+            <li><span class="package-item-name">🍆 باذنجان</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="eggplant" title="كمية الباذنجان" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="eggplant">—</span></li>
+            <li><span class="package-item-name">🥕 جزر</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="carrot" title="كمية الجزر" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="carrot">—</span></li>
+            <li><span class="package-item-name">🫑 فلفل رومي</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="bell_pepper" title="كمية الفلفل الرومي" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="bell_pepper">—</span></li>
+            <li><span class="package-item-name">🌶️ شطة</span> <input type="number" min="0" step="1" class="qty-input" data-product="chili" title="كمية الشطة" placeholder="كم وحدة؟"> <span class="package-item-unit">وحدة</span> <span class="product-price" data-product="chili">—</span></li>
+            <li><span class="package-item-name">🥔 بطاطس</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="potato" title="كمية البطاطس" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="potato">—</span></li>
+            <li><span class="package-item-name">🌶️ فلفل حار</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="hot_pepper" title="كمية الفلفل الحار" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="hot_pepper">—</span></li>
+            <li><span class="package-item-name">🫘 فاصوليا خضراء</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="green_beans" title="كمية الفاصوليا" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="green_beans">—</span></li>
+            <li><span class="package-item-name">🫘 بسلة</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="peas" title="كمية البسلة" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="peas">—</span></li>
+            <li><span class="package-item-name">🥗 بامية</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="okra" title="كمية البامية" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="okra">—</span></li>
+            <li><span class="package-item-name">🥬 سبانخ</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="spinach" title="كمية السبانخ" placeholder="كم حزمة؟"> <span class="package-item-unit">حزمة</span> <span class="product-price" data-product="spinach">—</span></li>
+            <li><span class="package-item-name">🥬 ملوخية</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="molokhia" title="كمية الملوخية" placeholder="كم حزمة؟"> <span class="package-item-unit">حزمة</span> <span class="product-price" data-product="molokhia">—</span></li>
+            <li><span class="package-item-name">🌿 بقدونس</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="parsley" title="كمية البقدونس" placeholder="كم حزمة؟"> <span class="package-item-unit">حزمة</span> <span class="product-price" data-product="parsley">—</span></li>
+            <li><span class="package-item-name">🌿 كزبرة</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="coriander" title="كمية الكزبرة" placeholder="كم حزمة؟"> <span class="package-item-unit">حزمة</span> <span class="product-price" data-product="coriander">—</span></li>
+            <li><span class="package-item-name">🌿 شبت</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="dill" title="كمية الشبت" placeholder="كم حزمة؟"> <span class="package-item-unit">حزمة</span> <span class="product-price" data-product="dill">—</span></li>
+            <li><span class="package-item-name">🌿 جرجير</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="arugula" title="كمية الجرجير" placeholder="كم حزمة؟"> <span class="package-item-unit">حزمة</span> <span class="product-price" data-product="arugula">—</span></li>
+            <li><span class="package-item-name">🥬 خس</span> <input type="number" min="0" step="1" class="qty-input" data-product="lettuce" title="عدد الخس" placeholder="كم حبة؟"> <span class="package-item-unit">حبة</span> <span class="product-price" data-product="lettuce">—</span></li>
+            <li><span class="package-item-name">🥬 كرنب</span> <input type="number" min="0" step="1" class="qty-input" data-product="cabbage" title="عدد الكرنب" placeholder="كم حبة؟"> <span class="package-item-unit">حبة</span> <span class="product-price" data-product="cabbage">—</span></li>
+            <li><span class="package-item-name">🥦 بروكلي</span> <input type="number" min="0" step="1" class="qty-input" data-product="broccoli" title="عدد البروكلي" placeholder="كم حبة؟"> <span class="package-item-unit">حبة</span> <span class="product-price" data-product="broccoli">—</span></li>
+            <li><span class="package-item-name">🥦 قرنبيط</span> <input type="number" min="0" step="1" class="qty-input" data-product="cauliflower" title="عدد القرنبيط" placeholder="كم حبة؟"> <span class="package-item-unit">حبة</span> <span class="product-price" data-product="cauliflower">—</span></li>
+            <li><span class="package-item-name">🥬 كرفس</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="celery" title="كمية الكرفس" placeholder="كم حزمة؟"> <span class="package-item-unit">حزمة</span> <span class="product-price" data-product="celery">—</span></li>
+            <li><span class="package-item-name">🌱 كرات</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="leek" title="كمية الكرات" placeholder="كم حزمة؟"> <span class="package-item-unit">حزمة</span> <span class="product-price" data-product="leek">—</span></li>
+            <li><span class="package-item-name">🧅 بصل أخضر</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="spring_onion" title="كمية البصل الأخضر" placeholder="كم حزمة؟"> <span class="package-item-unit">حزمة</span> <span class="product-price" data-product="spring_onion">—</span></li>
+            <li><span class="package-item-name">🧄 ثوم</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="garlic" title="كمية الثوم" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="garlic">—</span></li>
+            <li><span class="package-item-name">🫚 زنجبيل</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="ginger" title="كمية الزنجبيل" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="ginger">—</span></li>
+            <li><span class="package-item-name">🍠 بطاطا حلوة</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="sweet_potato" title="كمية البطاطا الحلوة" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="sweet_potato">—</span></li>
+            <li><span class="package-item-name">🌽 ذرة</span> <input type="number" min="0" step="1" class="qty-input" data-product="corn" title="عدد الذرة" placeholder="كم حبة؟"> <span class="package-item-unit">حبة</span> <span class="product-price" data-product="corn">—</span></li>
+          </ul>
+          <div class="package-price">تحديث تلقائي</div>
+          <button class="btn-select" onclick="openPackageOptions('week', this)">اختر</button>
+        </div>
+
+        <!-- ===== Half-Weekly Package ===== -->
+        <div class="package-card blue" data-package="half">
+          <div class="package-emoji">🧺</div>
+          <h3 class="package-name">باقة نصف أسبوعية</h3>
+          <p class="package-desc">توصيل كل 3 أيام</p>
+          <ul class="package-items-list">
+            <li><span class="package-item-name">🍅 طماطم</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="tomato" title="كمية الطماطم" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="tomato">—</span></li>
+            <li><span class="package-item-name">🧅 بصل أبيض</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="white_onion" title="كمية البصل الأبيض" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="white_onion">—</span></li>
+            <li><span class="package-item-name">🧅 بصل أحمر</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="red_onion" title="كمية البصل الأحمر" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="red_onion">—</span></li>
+            <li><span class="package-item-name">🥒 خيار</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="cucumber" title="كمية الخيار" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="cucumber">—</span></li>
+            <li><span class="package-item-name">🥒 كوسة</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="zucchini" title="كمية الكوسة" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="zucchini">—</span></li>
+            <li><span class="package-item-name">🍆 باذنجان</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="eggplant" title="كمية الباذنجان" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="eggplant">—</span></li>
+            <li><span class="package-item-name">🥕 جزر</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="carrot" title="كمية الجزر" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="carrot">—</span></li>
+            <li><span class="package-item-name">🫑 فلفل رومي</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="bell_pepper" title="كمية الفلفل الرومي" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="bell_pepper">—</span></li>
+            <li><span class="package-item-name">🌶️ شطة</span> <input type="number" min="0" step="1" class="qty-input" data-product="chili" title="كمية الشطة" placeholder="كم وحدة؟"> <span class="package-item-unit">وحدة</span> <span class="product-price" data-product="chili">—</span></li>
+            <li><span class="package-item-name">🥔 بطاطس</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="potato" title="كمية البطاطس" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="potato">—</span></li>
+            <li><span class="package-item-name">🌶️ فلفل حار</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="hot_pepper" title="كمية الفلفل الحار" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="hot_pepper">—</span></li>
+            <li><span class="package-item-name">🫘 فاصوليا خضراء</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="green_beans" title="كمية الفاصوليا" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="green_beans">—</span></li>
+            <li><span class="package-item-name">🫘 بسلة</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="peas" title="كمية البسلة" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="peas">—</span></li>
+            <li><span class="package-item-name">🥗 بامية</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="okra" title="كمية البامية" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="okra">—</span></li>
+            <li><span class="package-item-name">🥬 سبانخ</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="spinach" title="كمية السبانخ" placeholder="كم حزمة؟"> <span class="package-item-unit">حزمة</span> <span class="product-price" data-product="spinach">—</span></li>
+            <li><span class="package-item-name">🥬 ملوخية</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="molokhia" title="كمية الملوخية" placeholder="كم حزمة؟"> <span class="package-item-unit">حزمة</span> <span class="product-price" data-product="molokhia">—</span></li>
+            <li><span class="package-item-name">🌿 بقدونس</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="parsley" title="كمية البقدونس" placeholder="كم حزمة؟"> <span class="package-item-unit">حزمة</span> <span class="product-price" data-product="parsley">—</span></li>
+            <li><span class="package-item-name">🌿 كزبرة</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="coriander" title="كمية الكزبرة" placeholder="كم حزمة؟"> <span class="package-item-unit">حزمة</span> <span class="product-price" data-product="coriander">—</span></li>
+            <li><span class="package-item-name">🌿 شبت</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="dill" title="كمية الشبت" placeholder="كم حزمة؟"> <span class="package-item-unit">حزمة</span> <span class="product-price" data-product="dill">—</span></li>
+            <li><span class="package-item-name">🌿 جرجير</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="arugula" title="كمية الجرجير" placeholder="كم حزمة؟"> <span class="package-item-unit">حزمة</span> <span class="product-price" data-product="arugula">—</span></li>
+            <li><span class="package-item-name">🥬 خس</span> <input type="number" min="0" step="1" class="qty-input" data-product="lettuce" title="عدد الخس" placeholder="كم حبة؟"> <span class="package-item-unit">حبة</span> <span class="product-price" data-product="lettuce">—</span></li>
+            <li><span class="package-item-name">🥬 كرنب</span> <input type="number" min="0" step="1" class="qty-input" data-product="cabbage" title="عدد الكرنب" placeholder="كم حبة؟"> <span class="package-item-unit">حبة</span> <span class="product-price" data-product="cabbage">—</span></li>
+            <li><span class="package-item-name">🥦 بروكلي</span> <input type="number" min="0" step="1" class="qty-input" data-product="broccoli" title="عدد البروكلي" placeholder="كم حبة؟"> <span class="package-item-unit">حبة</span> <span class="product-price" data-product="broccoli">—</span></li>
+            <li><span class="package-item-name">🥦 قرنبيط</span> <input type="number" min="0" step="1" class="qty-input" data-product="cauliflower" title="عدد القرنبيط" placeholder="كم حبة؟"> <span class="package-item-unit">حبة</span> <span class="product-price" data-product="cauliflower">—</span></li>
+            <li><span class="package-item-name">🥬 كرفس</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="celery" title="كمية الكرفس" placeholder="كم حزمة؟"> <span class="package-item-unit">حزمة</span> <span class="product-price" data-product="celery">—</span></li>
+            <li><span class="package-item-name">🌱 كرات</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="leek" title="كمية الكرات" placeholder="كم حزمة؟"> <span class="package-item-unit">حزمة</span> <span class="product-price" data-product="leek">—</span></li>
+            <li><span class="package-item-name">🧅 بصل أخضر</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="spring_onion" title="كمية البصل الأخضر" placeholder="كم حزمة؟"> <span class="package-item-unit">حزمة</span> <span class="product-price" data-product="spring_onion">—</span></li>
+            <li><span class="package-item-name">🧄 ثوم</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="garlic" title="كمية الثوم" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="garlic">—</span></li>
+            <li><span class="package-item-name">🫚 زنجبيل</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="ginger" title="كمية الزنجبيل" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="ginger">—</span></li>
+            <li><span class="package-item-name">🍠 بطاطا حلوة</span> <input type="number" min="0" step="0.25" class="qty-input" data-product="sweet_potato" title="كمية البطاطا الحلوة" placeholder="كم كجم؟"> <span class="package-item-unit">كجم</span> <span class="product-price" data-product="sweet_potato">—</span></li>
+            <li><span class="package-item-name">🌽 ذرة</span> <input type="number" min="0" step="1" class="qty-input" data-product="corn" title="عدد الذرة" placeholder="كم حبة؟"> <span class="package-item-unit">حبة</span> <span class="product-price" data-product="corn">—</span></li>
+          </ul>
+          <div class="package-price">تحديث تلقائي</div>
+          <button class="btn-select" onclick="openPackageOptions('half', this)">اختر</button>
+        </div>
+
+      </div>
+    </section>
+
+    <a class="whatsapp-help" href="https://wa.me/201067465207" target="_blank" rel="noopener" style="display:block;text-align:center;margin:16px auto;padding:10px 14px;background:#25D366;color:#fff;border-radius:12px;max-width:340px;font-weight:700;">
+      💬 تواصل مع خدمة العملاء واتساب: 01067465207
+    </a>
+
+    
+
+  <!-- Scripts in order: config → utils → main -->
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script>
+    // استخدام الأسعار الموجودة في PRODUCTS بعد المزامنة من config.js
+
+    function calculatePackagePriceByInputs(card) {
+      let total = 0;
+      card.querySelectorAll('.qty-input').forEach(input => {
+        const product = input.getAttribute('data-product');
+        const qty = parseFloat(input.value) || 0;
+        const price = (PRODUCTS && PRODUCTS[product]) ? Number(PRODUCTS[product].unitPrice) || 0 : 0;
+        if (!Number.isFinite(price) || price <= 0) return;
+        total += qty * price;
+      });
+      return Math.round(total);
+    }
+
+    function updatePackagePrice(card) {
+      const price = calculatePackagePriceByInputs(card);
+      const priceEl = card.querySelector('.package-price');
+      if (priceEl) priceEl.textContent = price + ' جنيه';
+    }
+
+    function refreshAllPackagePrices() {
+      document.querySelectorAll('.package-card').forEach(card => updatePackagePrice(card));
+    }
+
+    function renderPriceBadges() {
+      document.querySelectorAll('.product-price').forEach(span => {
+        const product = span.getAttribute('data-product');
+        const price = (PRODUCTS && PRODUCTS[product]) ? Number(PRODUCTS[product].unitPrice) || 0 : 0;
+        span.textContent = Number.isFinite(price) && price > 0 ? `${price} جنيه/${PRODUCTS[product]?.unit || ''}` : 'غير متوفر';
+      });
+    }
+
+    function hideUnavailableProducts() {
+      document.querySelectorAll('[data-product]').forEach(el => {
+        const product = el.getAttribute('data-product');
+        const price = (PRODUCTS && PRODUCTS[product]) ? Number(PRODUCTS[product].unitPrice) || 0 : 0;
+        const li = el.closest('li') || el;
+        if (Number.isFinite(price) && price > 0) {
+          li.style.display = '';
+        } else {
+          li.style.display = 'none';
+        }
+      });
+    }
+
+    async function initPackagePricing() {
+      try { await loadProductPrices(); } catch (err) { console.warn('⚠️ price sync failed', err); }
+      document.querySelectorAll('.package-card').forEach(card => {
+        updatePackagePrice(card);
+        card.querySelectorAll('.qty-input').forEach(input => {
+          input.addEventListener('input', () => updatePackagePrice(card));
+        });
+      });
+      renderPriceBadges();
+      hideUnavailableProducts();
+    }
+
+    document.addEventListener('DOMContentLoaded', initPackagePricing);
+    document.addEventListener('prices:updated', () => { renderPriceBadges(); hideUnavailableProducts(); refreshAllPackagePrices(); });
+  </script>
+  <script src="js/main.js"></script>
+</body>
+</html>
+
+
+
