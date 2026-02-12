@@ -238,6 +238,216 @@ const PRODUCTS = {
     name: 'ذرة',
     unit: 'حبة',
     unitPrice: null
+  },
+  apple: {
+    label: '🍎 تفاح',
+    emoji: '🍎',
+    name: 'تفاح',
+    unit: 'كجم',
+    unitPrice: null
+  },
+  orange: {
+    label: '🍊 برتقال',
+    emoji: '🍊',
+    name: 'برتقال',
+    unit: 'كجم',
+    unitPrice: null
+  },
+  mandarin: {
+    label: '🍊 يوسفي',
+    emoji: '🍊',
+    name: 'يوسفي',
+    unit: 'كجم',
+    unitPrice: null
+  },
+  lemon: {
+    label: '🍋 ليمون',
+    emoji: '🍋',
+    name: 'ليمون',
+    unit: 'كجم',
+    unitPrice: null
+  },
+  lime: {
+    label: '🍋 ليمون أخضر',
+    emoji: '🍋',
+    name: 'ليمون أخضر',
+    unit: 'كجم',
+    unitPrice: null
+  },
+  grapefruit: {
+    label: '🍊 جريب فروت',
+    emoji: '🍊',
+    name: 'جريب فروت',
+    unit: 'كجم',
+    unitPrice: null
+  },
+  banana: {
+    label: '🍌 موز',
+    emoji: '🍌',
+    name: 'موز',
+    unit: 'كجم',
+    unitPrice: null
+  },
+  grapes: {
+    label: '🍇 عنب',
+    emoji: '🍇',
+    name: 'عنب',
+    unit: 'كجم',
+    unitPrice: null
+  },
+  mango: {
+    label: '🥭 مانجو',
+    emoji: '🥭',
+    name: 'مانجو',
+    unit: 'كجم',
+    unitPrice: null
+  },
+  strawberry: {
+    label: '🍓 فراولة',
+    emoji: '🍓',
+    name: 'فراولة',
+    unit: 'كجم',
+    unitPrice: null
+  },
+  watermelon: {
+    label: '🍉 بطيخ',
+    emoji: '🍉',
+    name: 'بطيخ',
+    unit: 'حبة',
+    unitPrice: null
+  },
+  cantaloupe: {
+    label: '🍈 كنتالوب',
+    emoji: '🍈',
+    name: 'كنتالوب',
+    unit: 'حبة',
+    unitPrice: null
+  },
+  melon: {
+    label: '🍈 شمام',
+    emoji: '🍈',
+    name: 'شمام',
+    unit: 'حبة',
+    unitPrice: null
+  },
+  dates: {
+    label: '🌴 بلح',
+    emoji: '🌴',
+    name: 'بلح',
+    unit: 'كجم',
+    unitPrice: null
+  },
+  sugar_apple: {
+    label: '🍈 نجا (قشطة)',
+    emoji: '🍈',
+    name: 'نجا (قشطة)',
+    unit: 'حبة',
+    unitPrice: null
+  },
+  guava: {
+    label: '🍐 جوافة',
+    emoji: '🍐',
+    name: 'جوافة',
+    unit: 'كجم',
+    unitPrice: null
+  },
+  peach: {
+    label: '🍑 خوخ',
+    emoji: '🍑',
+    name: 'خوخ',
+    unit: 'كجم',
+    unitPrice: null
+  },
+  plum: {
+    label: '🍑 برقوق',
+    emoji: '🍑',
+    name: 'برقوق',
+    unit: 'كجم',
+    unitPrice: null
+  },
+  apricot: {
+    label: '🍑 مشمش',
+    emoji: '🍑',
+    name: 'مشمش',
+    unit: 'كجم',
+    unitPrice: null
+  },
+  fig: {
+    label: '🍐 تين',
+    emoji: '🍐',
+    name: 'تين',
+    unit: 'كجم',
+    unitPrice: null
+  },
+  pomegranate: {
+    label: '🍎 رمان',
+    emoji: '🍎',
+    name: 'رمان',
+    unit: 'كجم',
+    unitPrice: null
+  },
+  pear: {
+    label: '🍐 كمثرى',
+    emoji: '🍐',
+    name: 'كمثرى',
+    unit: 'كجم',
+    unitPrice: null
+  },
+  cherry: {
+    label: '🍒 كرز',
+    emoji: '🍒',
+    name: 'كرز',
+    unit: 'كجم',
+    unitPrice: null
+  },
+  kiwi: {
+    label: '🥝 كيوي',
+    emoji: '🥝',
+    name: 'كيوي',
+    unit: 'كجم',
+    unitPrice: null
+  },
+  pineapple: {
+    label: '🍍 أناناس',
+    emoji: '🍍',
+    name: 'أناناس',
+    unit: 'حبة',
+    unitPrice: null
+  },
+  coconut: {
+    label: '🥥 جوز هند',
+    emoji: '🥥',
+    name: 'جوز هند',
+    unit: 'حبة',
+    unitPrice: null
+  },
+  avocado: {
+    label: '🥑 أفوكادو',
+    emoji: '🥑',
+    name: 'أفوكادو',
+    unit: 'حبة',
+    unitPrice: null
+  },
+  blueberry: {
+    label: '🫐 توت أزرق',
+    emoji: '🫐',
+    name: 'توت أزرق',
+    unit: 'كجم',
+    unitPrice: null
+  },
+  raspberry: {
+    label: '🍓 توت أحمر',
+    emoji: '🍓',
+    name: 'توت أحمر',
+    unit: 'كجم',
+    unitPrice: null
+  },
+  blackberry: {
+    label: '🫐 توت أسود',
+    emoji: '🫐',
+    name: 'توت أسود',
+    unit: 'كجم',
+    unitPrice: null
   }
 };
 
@@ -285,7 +495,37 @@ const PACKAGES = {
       garlic: 0,
       ginger: 0,
       sweet_potato: 0,
-      corn: 0
+      corn: 0,
+      apple: 0,
+      orange: 0,
+      mandarin: 0,
+      lemon: 0,
+      lime: 0,
+      grapefruit: 0,
+      banana: 0,
+      grapes: 0,
+      mango: 0,
+      strawberry: 0,
+      watermelon: 0,
+      cantaloupe: 0,
+      melon: 0,
+      dates: 0,
+      sugar_apple: 0,
+      guava: 0,
+      peach: 0,
+      plum: 0,
+      apricot: 0,
+      fig: 0,
+      pomegranate: 0,
+      pear: 0,
+      cherry: 0,
+      kiwi: 0,
+      pineapple: 0,
+      coconut: 0,
+      avocado: 0,
+      blueberry: 0,
+      raspberry: 0,
+      blackberry: 0
     }
   },
   week: {
@@ -325,7 +565,37 @@ const PACKAGES = {
       garlic: 0,
       ginger: 0,
       sweet_potato: 0,
-      corn: 0
+      corn: 0,
+      apple: 0,
+      orange: 0,
+      mandarin: 0,
+      lemon: 0,
+      lime: 0,
+      grapefruit: 0,
+      banana: 0,
+      grapes: 0,
+      mango: 0,
+      strawberry: 0,
+      watermelon: 0,
+      cantaloupe: 0,
+      melon: 0,
+      dates: 0,
+      sugar_apple: 0,
+      guava: 0,
+      peach: 0,
+      plum: 0,
+      apricot: 0,
+      fig: 0,
+      pomegranate: 0,
+      pear: 0,
+      cherry: 0,
+      kiwi: 0,
+      pineapple: 0,
+      coconut: 0,
+      avocado: 0,
+      blueberry: 0,
+      raspberry: 0,
+      blackberry: 0
     }
   }
 };

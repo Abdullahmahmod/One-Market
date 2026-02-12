@@ -26,6 +26,29 @@
     font-size: 0.9rem;
   }
 
+  .brand-text h1 {
+    font-size: 1.55rem;
+  }
+
+  .brand-text p {
+    font-size: 0.9rem;
+  }
+
+  .site-brand {
+    gap: 8px;
+  }
+
+  .brand-mark {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+  }
+
+  .brand-logo {
+    width: 32px;
+    height: 32px;
+  }
+
   .site-nav {
     gap: 6px;
     padding: 6px 0 2px;
