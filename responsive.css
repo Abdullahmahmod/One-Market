@@ -81,6 +81,109 @@
     margin-bottom: 18px;
   }
 
+  .products-subtitle {
+    font-size: 0.9rem;
+    margin: -6px auto 14px;
+  }
+
+  .products-grid-v2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .market-product-media {
+    min-height: 168px;
+    border-radius: 14px;
+    padding: 10px;
+  }
+
+  .market-product-image {
+    width: 82%;
+    max-height: 120px;
+  }
+
+  .market-product-emoji {
+    font-size: 52px;
+  }
+
+  .product-add-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .product-add-btn.has-qty {
+    width: 38px;
+    height: 38px;
+  }
+
+  .product-add-btn .add-icon {
+    font-size: 1.25rem;
+  }
+
+  .product-add-btn.has-qty .add-icon {
+    font-size: 0.78rem;
+  }
+
+  .product-add-btn .add-qty {
+    font-size: 0.6rem;
+  }
+
+  .product-qty-bar {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    min-height: 34px;
+    padding: 0 8px;
+  }
+
+  .qty-value {
+    font-size: 0.9rem;
+  }
+
+  .market-product-name {
+    font-size: 1rem;
+  }
+
+  .market-product-meta {
+    font-size: 0.8rem;
+  }
+
+  .price-major {
+    font-size: 1.6rem;
+  }
+
+  .price-minor {
+    font-size: 0.85rem;
+    margin-bottom: 3px;
+  }
+
+  .price-currency {
+    font-size: 0.72rem;
+    margin-bottom: 3px;
+  }
+
+  .quick-cart-btn {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    transform: none;
+    width: auto;
+    min-width: 0;
+    min-height: 42px;
+    padding: 10px 14px;
+    font-size: 0.96rem;
+  }
+
+  .quick-cart-btn:hover {
+    transform: translateY(-2px);
+  }
+
+  .quick-cart-count {
+    min-width: 22px;
+    height: 22px;
+    font-size: 0.8rem;
+  }
+
   .packages-grid {
     grid-template-columns: 1fr;
     gap: 14px;

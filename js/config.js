@@ -621,41 +621,408 @@ const SHEETS_API = {
 };
 
 // ============================================
-// DYNAMIC PRICING (load from product sheet)
+// DYNAMIC PRICING (load from backend API)
 // ============================================
 
 function buildPriceApiUrls() {
   const urls = [];
-  // User override via window.PRICE_API_URL or localStorage.priceApiUrl
+  const localUrls = [
+    'http://localhost:3000/api/products',
+    'http://127.0.0.1:3000/api/products'
+  ];
+  const railwayUrl = 'https://one-market-backend-production.up.railway.app/api/products';
+  let sameOriginUrl = '';
+  let isLocalRuntime = false;
+
+  if (typeof window !== 'undefined' && window.location) {
+    const origin = window.location.origin || '';
+    const hostname = String(window.location.hostname || '').toLowerCase();
+    const protocol = String(window.location.protocol || '').toLowerCase();
+    isLocalRuntime = protocol === 'file:' || hostname === 'localhost' || hostname === '127.0.0.1';
+    if (origin && !origin.startsWith('file:') && origin !== 'null') {
+      sameOriginUrl = `${origin.replace(/\/$/, '')}/api/products`;
+    }
+  }
+
+  // Optional override for staging/private backend endpoint
   try {
     const winUrl = typeof window !== 'undefined' ? window.PRICE_API_URL : '';
     const storedUrl = typeof window !== 'undefined' ? localStorage.getItem('priceApiUrl') : '';
-    [winUrl, storedUrl].filter(Boolean).forEach(u => urls.push(u.replace(/\/$/, '')));
+    [winUrl, storedUrl]
+      .filter(Boolean)
+      .forEach(u => urls.push(String(u).trim().replace(/\/$/, '')));
   } catch (_) {}
 
-  // Production (Railway)
-  urls.push('https://one-market-backend-production.up.railway.app/api/products');
-
-  // Local dev first (أولوية لسيناريو localhost)
-  urls.push('http://localhost:3000/api/products');
-  urls.push('http://127.0.0.1:3000/api/products');
-
-  // ثم نفس الأصل إن وُجد
-  if (typeof window !== 'undefined' && window.location) {
-    const origin = window.location.origin || '';
-    if (origin && !origin.startsWith('file:') && origin !== 'null') {
-      urls.push(`${origin.replace(/\/$/, '')}/api/products`);
-    }
+  if (isLocalRuntime) {
+    localUrls.forEach(u => urls.push(u));
+    if (sameOriginUrl) urls.push(sameOriginUrl);
+    urls.push(railwayUrl);
+  } else {
+    if (sameOriginUrl) urls.push(sameOriginUrl);
+    urls.push(railwayUrl);
+    localUrls.forEach(u => urls.push(u));
   }
-  return urls;
+
+  return Array.from(new Set(urls.filter(Boolean)));
 }
 
 const PRICE_API = {
   URLS: buildPriceApiUrls(),
-  TIMEOUT: 7000 // ms
+  TIMEOUT: 10000, // ms
+  SOURCE: 'backend'
 };
 
 let productPricesPromise = null;
+
+const PRODUCT_KEY_ALIASES = {
+  onion: 'white_onion',
+  whiteonion: 'white_onion',
+  white_onion: 'white_onion',
+  redonion: 'red_onion',
+  red_onion: 'red_onion',
+  springonion: 'spring_onion',
+  spring_onion: 'spring_onion',
+  greenonion: 'spring_onion',
+  green_onion: 'spring_onion',
+  bellpepper: 'bell_pepper',
+  bell_pepper: 'bell_pepper',
+  hotpepper: 'hot_pepper',
+  hot_pepper: 'hot_pepper',
+  greenbeans: 'green_beans',
+  green_beans: 'green_beans',
+  sweetpotato: 'sweet_potato',
+  sweet_potato: 'sweet_potato',
+  sugarapple: 'sugar_apple',
+  sugar_apple: 'sugar_apple',
+  sugarapplecustardapple: 'sugar_apple',
+  sugar_apple_custard_apple: 'sugar_apple',
+  custardapple: 'sugar_apple',
+  custard_apple: 'sugar_apple',
+  tangerine: 'mandarin'
+};
+
+function normalizeProductKey(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^\u0600-\u06ffa-z0-9_ ]+/g, '')
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+const PRODUCT_KEY_INDEX = (() => {
+  const index = {};
+  Object.entries(PRODUCTS).forEach(([id, info]) => {
+    const candidates = [id, info && info.name, info && info.label];
+    candidates.forEach(raw => {
+      const normalized = normalizeProductKey(raw);
+      if (!normalized) return;
+      index[normalized] = id;
+      index[normalized.replace(/_/g, '')] = id;
+    });
+  });
+  return index;
+})();
+
+function normalizeDigits(value) {
+  const arabicIndic = '٠١٢٣٤٥٦٧٨٩';
+  const easternIndic = '۰۱۲۳۴۵۶۷۸۹';
+  return String(value || '')
+    .replace(/[٠-٩]/g, d => String(arabicIndic.indexOf(d)))
+    .replace(/[۰-۹]/g, d => String(easternIndic.indexOf(d)));
+}
+
+function parsePriceNumber(value) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : NaN;
+  }
+  if (typeof value === 'string') {
+    const normalized = normalizeDigits(value)
+      .trim()
+      .replace(/,/g, '.')
+      .replace(/[^\d.-]+/g, '');
+    const numeric = Number(normalized);
+    return Number.isFinite(numeric) ? numeric : NaN;
+  }
+  return NaN;
+}
+
+function resolveProductId(rawKey) {
+  if (rawKey === null || rawKey === undefined) return null;
+
+  const asText = String(rawKey).trim();
+  if (!asText) return null;
+  if (PRODUCTS[asText]) return asText;
+
+  const normalized = normalizeProductKey(asText);
+  if (!normalized) return null;
+  if (PRODUCTS[normalized]) return normalized;
+
+  const collapsed = normalized.replace(/_/g, '');
+  return (
+    PRODUCT_KEY_INDEX[normalized] ||
+    PRODUCT_KEY_INDEX[collapsed] ||
+    PRODUCT_KEY_ALIASES[normalized] ||
+    PRODUCT_KEY_ALIASES[collapsed] ||
+    null
+  );
+}
+
+function extractNumericPrice(rawValue) {
+  if (rawValue && typeof rawValue === 'object') {
+    const nested =
+      rawValue.unitPrice ??
+      rawValue.unit_price ??
+      rawValue.price ??
+      rawValue.value ??
+      rawValue.amount;
+    return parsePriceNumber(nested);
+  }
+  return parsePriceNumber(rawValue);
+}
+
+function normalizePricePayload(data) {
+  if (!data || typeof data !== 'object') {
+    throw new Error('Invalid pricing payload');
+  }
+
+  const source = typeof data.source === 'string' ? data.source : 'sheet';
+  const rawProducts = data.products ?? data.prices ?? data.data ?? data.items ?? data;
+  const prices = {};
+
+  if (Array.isArray(rawProducts)) {
+    rawProducts.forEach(row => {
+      if (!row || typeof row !== 'object') return;
+      const rawId =
+        row.id ??
+        row.productId ??
+        row.product_id ??
+        row.product ??
+        row.key ??
+        row.name ??
+        row.item ??
+        row.code;
+      const productId = resolveProductId(rawId);
+      const numeric = extractNumericPrice(row);
+      if (productId && Number.isFinite(numeric)) {
+        prices[productId] = numeric;
+      }
+    });
+    return { source, prices };
+  }
+
+  if (!rawProducts || typeof rawProducts !== 'object') {
+    throw new Error('Invalid product price map');
+  }
+
+  Object.entries(rawProducts).forEach(([rawId, rawValue]) => {
+    const productId = resolveProductId(rawId);
+    const numeric = extractNumericPrice(rawValue);
+    if (productId && Number.isFinite(numeric)) {
+      prices[productId] = numeric;
+    }
+  });
+
+  return { source, prices };
+}
+
+const PRICE_ID_HEADER_KEYS = [
+  'productid',
+  'product',
+  'itemid',
+  'item',
+  'code',
+  'sku',
+  'id',
+  'name',
+  'المنتج',
+  'الصنف',
+  'اسمالصنف',
+  'اسم'
+];
+
+const PRICE_VALUE_HEADER_KEYS = [
+  'price',
+  'unitprice',
+  'unitcost',
+  'cost',
+  'value',
+  'amount',
+  'السعر',
+  'سعر'
+];
+
+function normalizeHeaderKey(value) {
+  return normalizeProductKey(value).replace(/_/g, '');
+}
+
+function matchesHeaderToken(header, tokens) {
+  return tokens.some(token => header.includes(token));
+}
+
+function detectSheetColumns(headers) {
+  const normalizedHeaders = (headers || []).map(normalizeHeaderKey);
+  let priceIndex = normalizedHeaders.findIndex(key => matchesHeaderToken(key, PRICE_VALUE_HEADER_KEYS));
+  let idIndex = normalizedHeaders.findIndex((key, idx) => idx !== priceIndex && matchesHeaderToken(key, PRICE_ID_HEADER_KEYS));
+
+  if (idIndex < 0 && normalizedHeaders.length > 0) idIndex = 0;
+  if (priceIndex < 0 && normalizedHeaders.length > 1) priceIndex = idIndex === 0 ? 1 : 0;
+
+  return { idIndex, priceIndex };
+}
+
+function extractPriceMapFromTable(headers, rows) {
+  const prices = {};
+  if (!Array.isArray(rows) || !rows.length) return prices;
+
+  const { idIndex, priceIndex } = detectSheetColumns(headers);
+  if (idIndex < 0 || priceIndex < 0) return prices;
+
+  rows.forEach(row => {
+    if (!Array.isArray(row)) return;
+    const productId = resolveProductId(row[idIndex]);
+    const numeric = parsePriceNumber(row[priceIndex]);
+    if (productId && Number.isFinite(numeric)) {
+      prices[productId] = numeric;
+    }
+  });
+
+  return prices;
+}
+
+function parseCsvRows(text) {
+  const rows = [];
+  let row = [];
+  let cell = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+
+    if (ch === '"') {
+      if (inQuotes && text[i + 1] === '"') {
+        cell += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (ch === ',' && !inQuotes) {
+      row.push(cell);
+      cell = '';
+      continue;
+    }
+
+    if ((ch === '\n' || ch === '\r') && !inQuotes) {
+      if (ch === '\r' && text[i + 1] === '\n') i++;
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = '';
+      continue;
+    }
+
+    cell += ch;
+  }
+
+  row.push(cell);
+  if (row.length > 1 || String(row[0] || '').trim() !== '') {
+    rows.push(row);
+  }
+
+  return rows;
+}
+
+function parseCsvPricePayload(text) {
+  const rows = parseCsvRows(text || '');
+  if (!rows.length) {
+    throw new Error('CSV response is empty');
+  }
+
+  const headers = (rows[0] || []).map(v => String(v || '').trim());
+  const dataRows = rows.slice(1);
+  const prices = extractPriceMapFromTable(headers, dataRows);
+
+  return { source: PRICE_API.SOURCE || 'backend', prices };
+}
+
+function parseGvizResponseText(text) {
+  const match = String(text || '').match(/google\.visualization\.Query\.setResponse\(([\s\S]+)\);?$/m);
+  if (!match) {
+    throw new Error('Invalid Google Visualization response');
+  }
+  return JSON.parse(match[1]);
+}
+
+function parseGvizPricePayload(text) {
+  const parsed = parseGvizResponseText(text);
+  const table = parsed && parsed.table;
+  if (!table || !Array.isArray(table.rows)) {
+    throw new Error('Google Visualization payload has no rows');
+  }
+
+  const headers = (table.cols || []).map(col => String((col && (col.label || col.id)) || '').trim());
+  const rows = table.rows.map(row => {
+    const cells = row && Array.isArray(row.c) ? row.c : [];
+    return cells.map(cell => {
+      if (!cell) return '';
+      return cell.v ?? cell.f ?? '';
+    });
+  });
+  const prices = extractPriceMapFromTable(headers, rows);
+
+  return { source: PRICE_API.SOURCE || 'backend', prices };
+}
+
+async function fetchPricePayload(url) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), PRICE_API.TIMEOUT);
+  const sep = url.includes('?') ? '&' : '?';
+  const requestUrl = `${url}${sep}_ts=${Date.now()}`;
+  try {
+    const resp = await fetch(requestUrl, {
+      signal: controller.signal,
+      cache: 'no-store',
+      headers: { Accept: 'application/json,text/csv,text/plain,*/*' }
+    });
+
+    if (resp.status === 401 || resp.status === 403) {
+      throw new Error('Pricing API access denied (401/403). تحقق من إعدادات صلاحيات الباك إند.');
+    }
+    if (!resp.ok) throw new Error(`HTTP ${resp.status} @ ${url}`);
+
+    const contentType = String(resp.headers.get('content-type') || '').toLowerCase();
+    const rawText = await resp.text();
+    const text = String(rawText || '').trim();
+    if (!text) throw new Error(`Empty response @ ${url}`);
+
+    if (text.includes('google.visualization.Query.setResponse(')) {
+      return parseGvizPricePayload(text);
+    }
+
+    if (contentType.includes('application/json') || text.startsWith('{') || text.startsWith('[')) {
+      const json = JSON.parse(text);
+      const normalized = normalizePricePayload(json);
+      return { source: normalized.source || PRICE_API.SOURCE || 'backend', prices: normalized.prices };
+    }
+
+    if (contentType.includes('text/csv') || /(?:output|format)=csv/i.test(url) || text.includes(',')) {
+      return parseCsvPricePayload(text);
+    }
+
+    throw new Error(`Unsupported response format @ ${url}`);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+function resetAllProductPrices() {
+  Object.values(PRODUCTS).forEach(product => {
+    product.unitPrice = null;
+  });
+}
 
 function getCurrentProductPrices() {
   const prices = {};
@@ -691,10 +1058,14 @@ function applyProductPrices(priceMap = {}, options = {}) {
   return applied;
 }
 
-function prunePackagesByPrices(pricesMap) {
+function prunePackagesByPrices(pricesMap, options = {}) {
+  const { onlyProvided = false } = options;
   Object.values(PACKAGES).forEach(pkg => {
     if (!pkg.items) return;
     Object.keys(pkg.items).forEach(itemId => {
+      if (onlyProvided && !Object.prototype.hasOwnProperty.call(pricesMap, itemId)) {
+        return;
+      }
       const price = pricesMap[itemId];
       if (!Number.isFinite(price) || price <= 0) {
         delete pkg.items[itemId];
@@ -707,30 +1078,39 @@ function loadProductPrices(force = false) {
   if (!force && productPricesPromise) return productPricesPromise;
 
   productPricesPromise = (async () => {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), PRICE_API.TIMEOUT);
     let lastError = null;
+    if (!Array.isArray(PRICE_API.URLS) || PRICE_API.URLS.length === 0) {
+      throw new Error('Invalid pricing API URL configuration');
+    }
+
     for (const url of PRICE_API.URLS) {
       try {
-        const resp = await fetch(url, { signal: controller.signal });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status} @ ${url}`);
-        const data = await resp.json();
-        if (!data.success || !data.products) {
-          throw new Error(data.message || `Invalid pricing response @ ${url}`);
+        const normalized = await fetchPricePayload(url);
+        if (!Object.keys(normalized.prices || {}).length) {
+          throw new Error(`No valid product prices found @ ${url}`);
         }
-        clearTimeout(timeoutId);
-        applyProductPrices(data.products, { source: data.source || 'sheet' });
-        prunePackagesByPrices(data.products);
-        return { source: data.source || 'sheet', prices: data.products, url };
+
+        resetAllProductPrices();
+        const applied = applyProductPrices(normalized.prices, { source: normalized.source || 'sheet' });
+        if (!Object.keys(applied).length) {
+          throw new Error(`No matching product keys in response @ ${url}`);
+        }
+
+        prunePackagesByPrices(normalized.prices, { onlyProvided: true });
+
+        return { source: normalized.source || 'sheet', prices: normalized.prices, applied, url };
       } catch (err) {
         lastError = err;
         console.warn('تعذر جلب الأسعار من', url, err.message);
       }
     }
-    clearTimeout(timeoutId);
+
     console.error('فشل تحميل الأسعار بعد تجربة كل الروابط', lastError);
     throw lastError || new Error('تعذر جلب الأسعار');
-  })();
+  })().catch(err => {
+    productPricesPromise = null;
+    throw err;
+  });
 
   return productPricesPromise;
 }

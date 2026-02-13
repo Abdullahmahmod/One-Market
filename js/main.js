@@ -220,7 +220,7 @@ function updateCartDisplay() {
   if (!cartEl && !modalEl) return;
 
   if (!currentPackage) {
-    const emptyMsg = '<p class="empty-cart">اختر باقة لإضافتها للعربة</p>';
+    const emptyMsg = '<p class="empty-cart">أضف منتجات لإضافتها للعربة</p>';
     if (cartEl) cartEl.innerHTML = emptyMsg;
     if (modalEl) modalEl.innerHTML = emptyMsg;
     if (totalEl) totalEl.textContent = '0 جنيه';
@@ -524,7 +524,7 @@ function updateCheckoutCTA(hasPackage) {
   };
 
   if (checkoutNote) {
-    checkoutNote.textContent = hasPackage ? '' : '\u0627\u062e\u062a\u0631 \u0628\u0627\u0642\u0629 \u0623\u0648\u0644\u0627.';
+    checkoutNote.textContent = hasPackage ? '' : 'أضف منتجات أولاً.';
   }
 }
 
@@ -541,7 +541,7 @@ function renderCheckoutEmpty() {
     `;
   }
   if (formWrapper) {
-    formWrapper.innerHTML = `<p class="form-placeholder">اختر باقة أولاً.</p>`;
+    formWrapper.innerHTML = `<p class="form-placeholder">أضف منتجات أولاً.</p>`;
   }
 }
 
