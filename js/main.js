@@ -30,6 +30,68 @@ function getEstimatedReadyMinutes() {
   return Number.isFinite(minutes) && minutes > 0 ? Math.round(minutes) : 45;
 }
 
+const BUSINESS_HOURS = {
+  startHour: 7,
+  endHour: 16
+};
+
+function getBusinessHoursLabel() {
+  return '7:00 صباحاً - 4:00 مساءً';
+}
+
+function isWithinBusinessHours(now = new Date()) {
+  const date = now instanceof Date ? now : new Date(now);
+  if (!Number.isFinite(date.getTime())) return false;
+
+  const currentMinutes = (date.getHours() * 60) + date.getMinutes();
+  const startMinutes = BUSINESS_HOURS.startHour * 60;
+  const endMinutes = BUSINESS_HOURS.endHour * 60;
+  return currentMinutes >= startMinutes && currentMinutes < endMinutes;
+}
+
+function getNextOpeningDate(now = new Date()) {
+  const date = now instanceof Date ? new Date(now.getTime()) : new Date(now);
+  if (!Number.isFinite(date.getTime())) return null;
+
+  const currentMinutes = (date.getHours() * 60) + date.getMinutes();
+  const startMinutes = BUSINESS_HOURS.startHour * 60;
+  const endMinutes = BUSINESS_HOURS.endHour * 60;
+
+  if (currentMinutes < startMinutes) {
+    date.setHours(BUSINESS_HOURS.startHour, 0, 0, 0);
+    return date;
+  }
+
+  if (currentMinutes >= endMinutes) {
+    date.setDate(date.getDate() + 1);
+    date.setHours(BUSINESS_HOURS.startHour, 0, 0, 0);
+    return date;
+  }
+
+  return date;
+}
+
+function buildBusinessHoursClosedMessage(now = new Date()) {
+  const hoursLabel = getBusinessHoursLabel();
+  const nextOpen = getNextOpeningDate(now);
+
+  if (!nextOpen) {
+    return `نعتذر، المتجر مغلق حالياً. نستقبل الطلبات يومياً من ${hoursLabel}.`;
+  }
+
+  const todayKey = (new Date(now)).toDateString();
+  const nextKey = nextOpen.toDateString();
+  const dayLabel = todayKey === nextKey ? 'اليوم' : 'غداً';
+  return `نعتذر، المتجر مغلق حالياً. نستقبل الطلبات يومياً من ${hoursLabel}. يمكنك الإرسال ${dayLabel} الساعة 7:00 صباحاً.`;
+}
+
+function buildBusinessHoursNoticeMessage() {
+  if (isWithinBusinessHours()) {
+    return `✅ نستقبل الطلبات الآن. ساعات العمل يومياً: ${getBusinessHoursLabel()}.`;
+  }
+  return `⛔ ${buildBusinessHoursClosedMessage()}`;
+}
+
 function calculateEstimatedReadyAt(baseDate = new Date(), minutes = getEstimatedReadyMinutes()) {
   const base = baseDate instanceof Date ? baseDate : new Date(baseDate);
   if (!Number.isFinite(base.getTime())) return null;
@@ -810,12 +872,21 @@ function renderCheckout() {
         </div>
         <p class="payment-hint">أرسل على 01067465207 ثم أدخل الرقم المرجعي أعلاه.</p>
       </div>
+      <p style="margin:10px 0 0;font-size:13px;color:#5f6f52;">${buildBusinessHoursNoticeMessage()}</p>
       <button type="submit" class="submit-button">✅ تأكيد الطلب</button>
     </form>
   `;
 
   const orderForm = getElement('orderForm');
-  if (orderForm) orderForm.addEventListener('submit', handleCheckoutSubmit);
+  if (orderForm) {
+    const submitBtn = orderForm.querySelector('button[type="submit"]');
+    if (submitBtn && !isWithinBusinessHours()) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = '⏰ خارج ساعات العمل';
+      submitBtn.title = `ساعات العمل: ${getBusinessHoursLabel()}`;
+    }
+    orderForm.addEventListener('submit', handleCheckoutSubmit);
+  }
   setupPaymentOptions();
   attachSwipeHandlers(summaryEl, true);
 }
@@ -1018,6 +1089,11 @@ function persistSubmittedOrderLocally(orderData = null) {
 async function handleCheckoutSubmit(e) {
   assertPricesLoaded();
   e.preventDefault();
+  if (!isWithinBusinessHours()) {
+    showWarningMessage(buildBusinessHoursClosedMessage(), 'المتجر مغلق الآن');
+    return;
+  }
+
   const name = getElement('name').value.trim();
   const phone = getElement('phone').value.trim();
   const address = getElement('address').value.trim();
@@ -1116,6 +1192,11 @@ function addOrderFormToCart() {
 async function handleOrderSubmit(e) {
   assertPricesLoaded();
   e.preventDefault();
+  if (!isWithinBusinessHours()) {
+    showWarningMessage(buildBusinessHoursClosedMessage(), 'المتجر مغلق الآن');
+    return;
+  }
+
   const name = getElement('name').value.trim();
   const phone = getElement('phone').value.trim();
   const address = getElement('address').value.trim();
