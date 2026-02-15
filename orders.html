@@ -6,6 +6,7 @@
   <title>طلباتي - One market</title>
   <link rel="icon" type="image/svg+xml" href="logo.svg">
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <link rel="stylesheet" href="theme.css">
   <link rel="stylesheet" href="main.css">
   <link rel="stylesheet" href="responsive.css">
@@ -26,14 +27,25 @@
       <a href="shop.html">المتجر</a>
       <a href="about.html">عن المتجر</a>
       <a href="checkout.html">الدفع</a>
+      <a href="orders.html">طلباتي</a>
       <a href="cart.html">العربة</a>
     </nav>
   </header>
 
   <!-- ===== Main Content ===== -->
-  <main class="page-main">
-    <h2>طلباتي</h2>
-    <p>هنا ستجد سجل طلباتك عندما تكمل عملية الطلب.</p>
+  <main class="cart-page">
+    <div class="cart-wrapper">
+      <a class="back-button" href="index.html">العودة للرئيسية</a>
+
+      <section class="orders-section">
+        <div class="orders-header">
+          <h2 class="cart-title">📦 طلباتي</h2>
+          <p class="cart-helper">إجمالي الطلبات المحفوظة: <b id="ordersCount">0</b></p>
+          <button id="clearOrdersBtn" type="button" class="clear-orders-btn">حذف سجل الطلبات</button>
+        </div>
+        <div id="ordersList" class="orders-list" aria-live="polite"></div>
+      </section>
+    </div>
   </main>
 
   <!-- ===== Footer ===== -->

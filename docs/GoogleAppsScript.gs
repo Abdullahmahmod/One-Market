@@ -7,7 +7,7 @@
  * 1. Go to script.google.com
  * 2. Create a new project
  * 3. Copy this code into the editor
- * 4. Set up Google Sheet with columns: customer_name, phone, address, order_details, order_price, order_date, frequency
+ * 4. Set up Google Sheet with columns: order_id, customer_name, phone, address, order_details, order_price, order_date, frequency
  * 5. Update SHEET_ID below with your actual spreadsheet ID
  * 6. Deploy as a web app (Execute as: Me, Who has access: Anyone)
  * 7. Copy the deployment URL and update SHEETS_API.SCRIPT_URL in config.js
@@ -37,8 +37,16 @@ function getOrCreateSheet() {
   if (!sheet) {
     sheet = spreadsheet.insertSheet(SHEET_NAME);
     // Add headers
-    const headers = ['customer_name', 'phone', 'address', 'order_details', 'order_price', 'order_date', 'frequency', 'submission_timestamp'];
+    const headers = ['order_id', 'customer_name', 'phone', 'address', 'order_details', 'order_price', 'order_date', 'frequency', 'submission_timestamp'];
     sheet.appendRow(headers);
+  } else {
+    const firstHeader = String(sheet.getRange(1, 1).getValue() || '').trim().toLowerCase();
+    if (firstHeader !== 'order_id') {
+      // Existing sheets from older versions may start with customer_name.
+      // Insert a new column A for order_id to keep numbering aligned with UI.
+      sheet.insertColumnBefore(1);
+      sheet.getRange(1, 1).setValue('order_id');
+    }
   }
 
   return sheet;
@@ -52,6 +60,7 @@ function logOrderToSheet(data) {
     const sheet = getOrCreateSheet();
 
     const row = [
+      data.order_id || '',
       data.customer_name || '',
       data.phone || '',
       data.address || '',
@@ -220,6 +229,7 @@ function doGet(e) {
  */
 function testHandler() {
   const testData = {
+    order_id: 'OM-TEST-0001',
     customer_name: 'محمد أحمد',
     phone: '201001234567',
     address: 'القاهرة - المعادي - شارع النيل',

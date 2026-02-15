@@ -15,6 +15,65 @@ const API_BASE = (typeof window !== 'undefined' && window.API_BASE_URL)
   ? window.API_BASE_URL.replace(/\/$/, '')
   : 'https://one-market-backend-production.up.railway.app';
 
+function getDeliveryFee() {
+  const fee = Number(APP_CONFIG?.deliveryFee);
+  return Number.isFinite(fee) && fee > 0 ? fee : 0;
+}
+
+function calculateOrderTotal(subtotal) {
+  const base = Number(subtotal) || 0;
+  return Number((base + getDeliveryFee()).toFixed(2));
+}
+
+function getEstimatedReadyMinutes() {
+  const minutes = Number(APP_CONFIG?.estimatedReadyMinutes);
+  return Number.isFinite(minutes) && minutes > 0 ? Math.round(minutes) : 45;
+}
+
+function calculateEstimatedReadyAt(baseDate = new Date(), minutes = getEstimatedReadyMinutes()) {
+  const base = baseDate instanceof Date ? baseDate : new Date(baseDate);
+  if (!Number.isFinite(base.getTime())) return null;
+  return new Date(base.getTime() + (minutes * 60 * 1000));
+}
+
+function formatEstimatedReadyLabel(dateLike, minutes = getEstimatedReadyMinutes()) {
+  const readyDate = dateLike ? new Date(dateLike) : null;
+  if (!readyDate || !Number.isFinite(readyDate.getTime())) {
+    return `بعد ${minutes} دقيقة من تأكيد الطلب`;
+  }
+  return `${formatDateArabic(readyDate)} (بعد ${minutes} دقيقة)`;
+}
+
+function formatDeliveryFeeLabel(value = getDeliveryFee()) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount) || amount <= 0) return 'مجاني';
+  return formatPrice(amount);
+}
+
+function buildPriceBreakdownCard(subtotal, totalId = 'priceDisplay') {
+  const cleanSubtotal = Number(subtotal) || 0;
+  const deliveryFee = getDeliveryFee();
+  const total = calculateOrderTotal(cleanSubtotal);
+  const idAttr = totalId ? ` id="${totalId}"` : '';
+
+  return `
+    <div class="price-card price-card-breakdown">
+      <div class="price-line">
+        <span class="price-label">سعر المنتجات:</span>
+        <span class="price-value-sm">${formatPrice(cleanSubtotal)}</span>
+      </div>
+      <div class="price-line">
+        <span class="price-label">خدمة التوصيل:</span>
+        <span class="price-value-sm">${formatDeliveryFeeLabel(deliveryFee)}</span>
+      </div>
+      <div class="price-line total">
+        <span class="price-label">الإجمالي:</span>
+        <span class="price-value"${idAttr}>${formatPrice(total)}</span>
+      </div>
+    </div>
+  `;
+}
+
 // ============================================
 // PACKAGE MANAGEMENT
 // ============================================
@@ -258,15 +317,15 @@ function updateCartDisplay() {
         تكرار الطلب: <b>${currentPackage.isRecurring ? 'نعم' : 'لا'}</b>
       </div>
       <div class="package-price-display">
-        السعر: <span>${formatPrice(currentPackage.price)}</span>
+        الإجمالي (${getDeliveryFee() > 0 ? 'شامل التوصيل' : 'التوصيل مجاني'}): <span>${formatPrice(calculateOrderTotal(currentPackage.price))}</span>
       </div>
     </div>
   `;
 
   if (cartEl) cartEl.innerHTML = cartHTML;
   if (modalEl) modalEl.innerHTML = cartHTML;
-  if (totalEl) totalEl.textContent = formatPrice(currentPackage.price);
-  if (totalModalEl) totalModalEl.textContent = formatPrice(currentPackage.price);
+  if (totalEl) totalEl.textContent = formatPrice(calculateOrderTotal(currentPackage.price));
+  if (totalModalEl) totalModalEl.textContent = formatPrice(calculateOrderTotal(currentPackage.price));
 }
 
 /**
@@ -380,6 +439,8 @@ async function showConfirmation(message, title = 'تأكيد') {
 async function initializeApp() {
   // Load saved package from localStorage
   currentPackage = loadPackageFromStorage();
+  const pathname = window.location.pathname || '';
+  const isOrdersPage = pathname.includes('orders.html');
 
   // Ensure prices are synced from the backend sheet before any calculations
   try {
@@ -391,23 +452,29 @@ async function initializeApp() {
     });
   } catch (err) {
     pricesLoaded = false;
-    showErrorMessage('تعذر تحميل الأسعار من الشيت. يرجى المحاولة لاحقاً.');
-    return;
+    if (!isOrdersPage) {
+      showErrorMessage('تعذر تحميل الأسعار من الشيت. يرجى المحاولة لاحقاً.');
+      return;
+    }
   }
 
   // Recalculate stored package with latest prices
-  if (currentPackage) {
+  if (currentPackage && pricesLoaded) {
     currentPackage.price = recalcPriceFromItems(currentPackage.items);
     savePackageToStorage(currentPackage);
   }
 
   // Update cart display if on cart/checkout page
-  if (window.location.pathname.includes('cart.html')) {
+  if (pathname.includes('cart.html')) {
     loadCartData();
   }
 
-  if (window.location.pathname.includes('checkout.html')) {
+  if (pathname.includes('checkout.html')) {
     loadCheckoutData();
+  }
+
+  if (pathname.includes('orders.html')) {
+    loadOrdersData();
   }
 
   console.log('✅ One Market - App initialized');
@@ -432,6 +499,122 @@ function loadCheckoutData() {
   }
 
   renderCheckout();
+}
+
+function loadOrdersData() {
+  const ordersEl = getElement('ordersList');
+  const countEl = getElement('ordersCount');
+  const clearBtn = getElement('clearOrdersBtn');
+  if (!ordersEl) return;
+
+  if (clearBtn && clearBtn.dataset.bound !== 'true') {
+    clearBtn.addEventListener('click', clearOrderHistory);
+    clearBtn.dataset.bound = 'true';
+  }
+
+  const orders = getOrderHistoryFromStorage();
+  if (countEl) countEl.textContent = String(orders.length);
+
+  if (!orders.length) {
+    renderOrdersEmpty(ordersEl);
+    return;
+  }
+
+  ordersEl.innerHTML = orders.map(renderOrderCard).join('');
+}
+
+function renderOrdersEmpty(ordersEl) {
+  if (!ordersEl) return;
+  ordersEl.innerHTML = `
+    <div class="empty-cart-message">
+      <div class="empty-cart-icon">📦</div>
+      <div class="empty-cart-text">لا توجد طلبات محفوظة حالياً</div>
+      <a href="index.html" class="continue-shopping-btn">ابدأ التسوق</a>
+    </div>
+  `;
+}
+
+function formatOrderTimestamp(value) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return 'غير محدد';
+  return formatDateArabic(date);
+}
+
+function renderOrderItems(order) {
+  const items = order?.packageData?.items || {};
+  const rows = Object.entries(items)
+    .map(([itemId, qty]) => {
+      const product = PRODUCTS[itemId];
+      const itemName = product ? `${product.emoji} ${product.name}` : itemId;
+      const itemUnit = product ? product.unit : '';
+      const qtyLabel = `${qty} ${itemUnit}`.trim();
+      return `
+        <li class="orders-item-row">
+          <span>${sanitizeHTML(itemName)}</span>
+          <span class="item-qty">${sanitizeHTML(qtyLabel)}</span>
+        </li>
+      `;
+    })
+    .join('');
+
+  if (rows) return rows;
+  return `<li class="orders-item-row"><span>لا توجد عناصر</span></li>`;
+}
+
+function renderOrderCard(order) {
+  const submittedAt = order?.submission?.submittedAt || order?.submittedAt || order?.timestamp;
+  const packageEmoji = sanitizeHTML(order?.packageData?.emoji || '🛒');
+  const packageName = sanitizeHTML(order?.packageData?.name || 'طلب مخصص');
+  const estimatedReadyMinutes = Number.isFinite(Number(order?.estimatedReadyMinutes))
+    ? Math.round(Number(order.estimatedReadyMinutes))
+    : getEstimatedReadyMinutes();
+  const expectedReadyAt = order?.expectedReadyAt
+    || order?.submission?.expectedReadyAt
+    || calculateEstimatedReadyAt(submittedAt, estimatedReadyMinutes)?.toISOString();
+  const hasBreakdown = Number.isFinite(Number(order?.subtotalPrice)) || Number.isFinite(Number(order?.deliveryFee));
+  const subtotal = hasBreakdown
+    ? (Number(order?.subtotalPrice) || 0)
+    : (Number(order?.price) || 0);
+  const deliveryFee = hasBreakdown
+    ? (Number.isFinite(Number(order?.deliveryFee)) ? Number(order.deliveryFee) : getDeliveryFee())
+    : getDeliveryFee();
+  const total = hasBreakdown
+    ? (Number(order?.price) || calculateOrderTotal(subtotal))
+    : calculateOrderTotal(subtotal);
+
+  return `
+    <article class="orders-card">
+      <div class="orders-card-top">
+        <div>
+          <div class="orders-id">طلب #${sanitizeHTML(order?.id || '-')}</div>
+          <div class="orders-date">${formatOrderTimestamp(submittedAt)}</div>
+        </div>
+      </div>
+
+      <div class="orders-package">${packageEmoji} ${packageName}</div>
+      <ul class="orders-items">${renderOrderItems(order)}</ul>
+
+      <div class="orders-meta">
+        <div class="orders-meta-row"><span>العميل</span><b>${sanitizeHTML(order?.name || 'غير متوفر')}</b></div>
+        <div class="orders-meta-row"><span>الهاتف</span><b>${sanitizeHTML(order?.phone || 'غير متوفر')}</b></div>
+        <div class="orders-meta-row"><span>العنوان</span><b>${sanitizeHTML(order?.address || 'غير متوفر')}</b></div>
+        <div class="orders-meta-row"><span>طريقة الدفع</span><b>${sanitizeHTML(order?.paymentMethod || 'غير محدد')}</b></div>
+        <div class="orders-meta-row"><span>سعر المنتجات</span><b>${formatPrice(subtotal)}</b></div>
+        <div class="orders-meta-row"><span>خدمة التوصيل</span><b>${formatDeliveryFeeLabel(deliveryFee)}</b></div>
+        <div class="orders-meta-row"><span>موعد الاستلام</span><b>${sanitizeHTML(formatEstimatedReadyLabel(expectedReadyAt, estimatedReadyMinutes))}</b></div>
+        <div class="orders-meta-row total"><span>الإجمالي</span><b>${formatPrice(total)}</b></div>
+      </div>
+    </article>
+  `;
+}
+
+async function clearOrderHistory() {
+  const confirmed = await showConfirmation('هل تريد حذف كل الطلبات المحفوظة على هذا الجهاز؟', 'حذف السجل');
+  if (!confirmed) return;
+
+  saveOrderHistoryToStorage([]);
+  loadOrdersData();
+  showSuccessMessage('تم حذف سجل الطلبات من هذا الجهاز.');
 }
 
 /**
@@ -496,10 +679,7 @@ function renderCart() {
         </select>
       </div>
 
-      <div class="price-card">
-        <span class="price-label">الإجمالي:</span>
-        <span class="price-value" id="priceDisplay">${formatPrice(currentPackage.price)}</span>
-      </div>
+      ${buildPriceBreakdownCard(currentPackage.price, 'priceDisplay')}
     </div>
   `;
 
@@ -587,10 +767,7 @@ function renderCheckout() {
           ${frequencyOptions}
         </select>
       </div>
-      <div class="price-card">
-        <span class="price-label">الإجمالي:</span>
-        <span class="price-value" id="priceDisplay">${formatPrice(currentPackage.price)}</span>
-      </div>
+      ${buildPriceBreakdownCard(currentPackage.price, 'priceDisplay')}
     </div>
   `;
 
@@ -759,6 +936,85 @@ function setupPaymentOptions() {
   update();
 }
 
+function getOrderHistoryFromStorage() {
+  try {
+    const key = STORAGE_KEYS.ORDER_HISTORY || 'orderHistory';
+    const raw = localStorage.getItem(key);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.warn('⚠️ تعذر قراءة سجل الطلبات:', error);
+    return [];
+  }
+}
+
+function generateOrderId() {
+  return `OM-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+}
+
+function saveOrderHistoryToStorage(history) {
+  const key = STORAGE_KEYS.ORDER_HISTORY || 'orderHistory';
+  const normalized = Array.isArray(history) ? history : [];
+  localStorage.setItem(key, JSON.stringify(normalized));
+}
+
+function appendOrderToHistory(orderData) {
+  if (!orderData || !orderData.packageData) return null;
+
+  const submittedAt = new Date().toISOString();
+  const orderId = orderData.orderId || generateOrderId();
+  const estimatedReadyMinutes = Number.isFinite(Number(orderData.estimatedReadyMinutes))
+    ? Math.round(Number(orderData.estimatedReadyMinutes))
+    : getEstimatedReadyMinutes();
+  const expectedReadyDate = orderData.expectedReadyAt
+    ? new Date(orderData.expectedReadyAt)
+    : calculateEstimatedReadyAt(submittedAt, estimatedReadyMinutes);
+  const expectedReadyAt = expectedReadyDate && Number.isFinite(expectedReadyDate.getTime())
+    ? expectedReadyDate.toISOString()
+    : '';
+  const packageSnapshot = JSON.parse(JSON.stringify(orderData.packageData));
+
+  const orderEntry = {
+    id: orderId,
+    name: orderData.name,
+    phone: orderData.phone,
+    address: orderData.address,
+    subtotalPrice: Number(orderData.subtotalPrice) || 0,
+    deliveryFee: Number.isFinite(Number(orderData.deliveryFee)) ? Number(orderData.deliveryFee) : getDeliveryFee(),
+    price: Number(orderData.price) || 0,
+    frequency: orderData.frequency || 'مرة واحدة',
+    paymentMethod: orderData.paymentMethod || '',
+    paymentRef: orderData.paymentRef || '',
+    vodafoneNumber: orderData.vodafoneNumber || '',
+    isRecurring: !!orderData.isRecurring,
+    repeatEveryDays: Number(orderData.repeatEveryDays) || 0,
+    estimatedReadyMinutes,
+    expectedReadyAt,
+    packageData: packageSnapshot,
+    submission: {
+      status: 'pending',
+      submittedAt,
+      expectedReadyAt
+    },
+    timestamp: Date.now()
+  };
+
+  const history = getOrderHistoryFromStorage();
+  history.unshift(orderEntry);
+  saveOrderHistoryToStorage(history.slice(0, 50));
+  return orderEntry;
+}
+
+function persistSubmittedOrderLocally(orderData = null) {
+  if (orderData) {
+    appendOrderToHistory(orderData);
+  }
+
+  // بعد إرسال الطلب بنحتفظ به في "طلباتي" فقط ونفضي العربة الحالية
+  clearPackageFromStorage();
+  currentPackage = null;
+}
+
 async function handleCheckoutSubmit(e) {
   assertPricesLoaded();
   e.preventDefault();
@@ -780,12 +1036,23 @@ async function handleCheckoutSubmit(e) {
 
   const paymentLabel = paymentMethod === 'vodafone' ? 'فودافون كاش' : 'الدفع عند الاستلام';
   const repeatEveryDays = isRecurring ? currentPackage.deliveryDays : 0;
+  const subtotalPrice = Number(currentPackage.price) || 0;
+  const deliveryFee = getDeliveryFee();
+  const totalPrice = calculateOrderTotal(subtotalPrice);
+  const estimatedReadyMinutes = getEstimatedReadyMinutes();
+  const expectedReadyDate = calculateEstimatedReadyAt(new Date(), estimatedReadyMinutes);
+  const expectedReadyAt = expectedReadyDate ? expectedReadyDate.toISOString() : '';
 
   const orderData = {
+    orderId: generateOrderId(),
     name,
     phone,
     address,
-    price: currentPackage.price,
+    subtotalPrice,
+    deliveryFee,
+    price: totalPrice,
+    estimatedReadyMinutes,
+    expectedReadyAt,
     frequency: isRecurring ? currentPackage.frequency : 'مرة واحدة',
     packageData: currentPackage,
     paymentMethod: paymentLabel,
@@ -807,8 +1074,8 @@ async function handleCheckoutSubmit(e) {
   const success = await submitOrderToBackend(orderData);
   if (success) {
     sendWhatsAppNotification(orderData);
-    showSuccessMessage(`شكراً ${name} على طلبك!\n💰 ${formatPrice(orderData.price)}`, SUCCESS_MESSAGES.ORDER_SUBMITTED);
-    clearPackageFromStorage();
+    showSuccessMessage(`شكراً ${name} على طلبك!\n💰 ${formatPrice(orderData.price)}\n⏱️ الاستلام المتوقع بعد ${orderData.estimatedReadyMinutes} دقيقة.\n📌 طلبك محفوظ عندك حتى الاستلام.`, SUCCESS_MESSAGES.ORDER_SUBMITTED);
+    persistSubmittedOrderLocally(orderData);
     setTimeout(() => window.location.href = 'index.html', 2000);
   } else {
     showErrorMessage(ERROR_MESSAGES.SUBMISSION_ERROR);
@@ -858,12 +1125,23 @@ async function handleOrderSubmit(e) {
   if (!validateAddress(address)) { showErrorMessage(ERROR_MESSAGES.INVALID_ADDRESS); return; }
 
   const repeatEveryDays = isRecurring ? currentPackage.deliveryDays : 0;
+  const subtotalPrice = Number(currentPackage.price) || 0;
+  const deliveryFee = getDeliveryFee();
+  const totalPrice = calculateOrderTotal(subtotalPrice);
+  const estimatedReadyMinutes = getEstimatedReadyMinutes();
+  const expectedReadyDate = calculateEstimatedReadyAt(new Date(), estimatedReadyMinutes);
+  const expectedReadyAt = expectedReadyDate ? expectedReadyDate.toISOString() : '';
 
   const orderData = {
+    orderId: generateOrderId(),
     name,
     phone,
     address,
-    price: currentPackage.price,
+    subtotalPrice,
+    deliveryFee,
+    price: totalPrice,
+    estimatedReadyMinutes,
+    expectedReadyAt,
     frequency: isRecurring ? currentPackage.frequency : 'مرة واحدة',
     packageData: currentPackage,
     paymentMethod: 'الدفع عند الاستلام',
@@ -885,8 +1163,8 @@ async function handleOrderSubmit(e) {
   const success = await submitOrderToBackend(orderData);
   if (success) {
     sendWhatsAppNotification(orderData);
-    showSuccessMessage(`شكراً ${name} على طلبك!\n💰 ${formatPrice(orderData.price)}`, SUCCESS_MESSAGES.ORDER_SUBMITTED);
-    clearPackageFromStorage();
+    showSuccessMessage(`شكراً ${name} على طلبك!\n💰 ${formatPrice(orderData.price)}\n⏱️ الاستلام المتوقع بعد ${orderData.estimatedReadyMinutes} دقيقة.\n📌 طلبك محفوظ عندك حتى الاستلام.`, SUCCESS_MESSAGES.ORDER_SUBMITTED);
+    persistSubmittedOrderLocally(orderData);
     setTimeout(() => window.location.href = 'index.html', 2000);
   } else {
     showErrorMessage(ERROR_MESSAGES.SUBMISSION_ERROR);
@@ -898,8 +1176,16 @@ function buildOrderSummary(orderData, name) {
   const itemsList = Object.entries(currentPackage.items)
     .map(([itemId, qty]) => `<div>• ${formatItemDisplay(itemId, qty)}</div>`)
     .join('');
+  const deliveryFeeValue = Number.isFinite(Number(orderData.deliveryFee))
+    ? Number(orderData.deliveryFee)
+    : getDeliveryFee();
+  const estimatedReadyMinutes = Number.isFinite(Number(orderData.estimatedReadyMinutes))
+    ? Math.round(Number(orderData.estimatedReadyMinutes))
+    : getEstimatedReadyMinutes();
+  const expectedReadyLabel = formatEstimatedReadyLabel(orderData.expectedReadyAt, estimatedReadyMinutes);
   return `
     <div style="text-align: right; direction: rtl; font-size: 14px;">
+      <div><b>🆔 رقم الطلب:</b> ${sanitizeHTML(orderData.orderId || '-')}</div>
       <div><b>👤 الاسم:</b> ${sanitizeHTML(name)}</div>
       <div><b>📞 الهاتف:</b> ${orderData.phone}</div>
       <div><b>📍 العنوان:</b> ${sanitizeHTML(orderData.address)}</div>
@@ -912,6 +1198,9 @@ function buildOrderSummary(orderData, name) {
       <div><b>💳 طريقة الدفع:</b> ${orderData.paymentMethod || 'غير محدد'}</div>
       ${orderData.paymentRef ? `<div><b>🔢 الرقم المرجعي:</b> ${orderData.paymentRef}</div>` : ''}
       ${orderData.vodafoneNumber ? `<div><b>📲 رقم المرسل (فودافون):</b> ${orderData.vodafoneNumber}</div>` : ''}
+      <div><b>📦 موعد الاستلام المتوقع:</b> ${sanitizeHTML(expectedReadyLabel)}</div>
+      <div><b>🧺 سعر المنتجات:</b> ${formatPrice(orderData.subtotalPrice || 0)}</div>
+      <div><b>🚚 خدمة التوصيل:</b> ${formatDeliveryFeeLabel(deliveryFeeValue)}</div>
       <div><b>💰 الإجمالي:</b> <span style="color: #2d8f4e; font-size: 18px;">${formatPrice(orderData.price)}</span></div>
     </div>
   `;
@@ -923,11 +1212,16 @@ async function submitOrderToBackend(orderData) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        order_id: orderData.orderId || '',
         customer_name: orderData.name,
         phone: orderData.phone,
         address: orderData.address,
         details: formatOrderDetails(orderData.packageData),
+        subtotal_price: orderData.subtotalPrice || 0,
+        delivery_fee: Number.isFinite(Number(orderData.deliveryFee)) ? Number(orderData.deliveryFee) : getDeliveryFee(),
         total_price: orderData.price,
+        expected_ready_at: orderData.expectedReadyAt || '',
+        estimated_ready_minutes: Number(orderData.estimatedReadyMinutes) || getEstimatedReadyMinutes(),
         payment_method: orderData.paymentMethod,
         payment_ref: orderData.paymentRef,
         vodafone_sender: orderData.vodafoneNumber,

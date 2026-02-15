@@ -360,11 +360,18 @@ async function submitOrderToSheets(orderData) {
 
     // Build payload
     const payload = {
+      order_id: orderData.orderId || '',
       customer_name: sanitizeHTML(orderData.name),
       phone: orderData.phone,
       address: sanitizeHTML(orderData.address),
       order_details: formatOrderDetails(orderData.packageData),
+      order_subtotal: orderData.subtotalPrice || 0,
+      delivery_fee: Number.isFinite(Number(orderData.deliveryFee))
+        ? Number(orderData.deliveryFee)
+        : (Number(APP_CONFIG?.deliveryFee) || 0),
       order_price: orderData.price,
+      expected_ready_at: orderData.expectedReadyAt || '',
+      estimated_ready_minutes: Number(orderData.estimatedReadyMinutes) || Number(APP_CONFIG?.estimatedReadyMinutes) || 45,
       order_date: formatDateArabic(),
       frequency: orderData.frequency || 'مرة واحدة'
     };

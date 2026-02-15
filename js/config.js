@@ -13,7 +13,9 @@ const APP_CONFIG = {
   name: 'One Market',
   version: '1.0.0',
   language: 'ar',
-  currency: 'جنيه'
+  currency: 'جنيه',
+  deliveryFee: 0,
+  estimatedReadyMinutes: 45
 };
 
 // ============================================
@@ -606,7 +608,8 @@ const PACKAGES = {
 
 const STORAGE_KEYS = {
   CURRENT_PACKAGE: 'cartPackage',
-  ORDERS_SUBMITTED: 'submittedOrders'
+  ORDERS_SUBMITTED: 'submittedOrders',
+  ORDER_HISTORY: 'orderHistory'
 };
 
 // ============================================
@@ -616,7 +619,7 @@ const STORAGE_KEYS = {
 // Google Sheets API configuration (for order submission)
 const SHEETS_API = {
   SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyetRatHPq4gsQEemFjrU2C1garMSGuVl8U6e_JltLEvYQK7LX_zWsdwyF7Zg8qeH1DYg/exec',
-  // This script should handle: customer_name, phone, address, order_details, order_date
+  // This script should handle: order_id, customer_name, phone, address, order_details, order_date
   ENDPOINT: 'submitOrder'
 };
 
