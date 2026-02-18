@@ -4,3 +4,4 @@ backend/credentials.json
 backend/.env
 .env
 .DS_Store
+admin/ 

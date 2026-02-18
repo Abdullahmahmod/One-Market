@@ -11,18 +11,49 @@
 
 let currentPackage = null;
 let pricesLoaded = false;
+const DELIVERY_AREAS = ['الأقصر المدينة', 'البغدادي', 'الحبيل'];
+const DELIVERY_FEES_BY_AREA = Object.freeze({
+  'الأقصر المدينة': 15,
+  'الحبيل': 10,
+  'البغدادي': 10
+});
+const DELIVERY_AREA_STORAGE_KEY = 'selectedDeliveryArea';
 const API_BASE = (typeof window !== 'undefined' && window.API_BASE_URL)
   ? window.API_BASE_URL.replace(/\/$/, '')
   : 'https://one-market-backend-production.up.railway.app';
 
-function getDeliveryFee() {
+function getSelectedDeliveryArea() {
+  try {
+    const area = String(localStorage.getItem(DELIVERY_AREA_STORAGE_KEY) || '').trim();
+    return Object.prototype.hasOwnProperty.call(DELIVERY_FEES_BY_AREA, area) ? area : '';
+  } catch (_) {
+    return '';
+  }
+}
+
+function setSelectedDeliveryArea(area = '') {
+  try {
+    const normalized = String(area || '').trim();
+    if (Object.prototype.hasOwnProperty.call(DELIVERY_FEES_BY_AREA, normalized)) {
+      localStorage.setItem(DELIVERY_AREA_STORAGE_KEY, normalized);
+    } else {
+      localStorage.removeItem(DELIVERY_AREA_STORAGE_KEY);
+    }
+  } catch (_) {}
+}
+
+function getDeliveryFee(deliveryArea = '') {
+  const area = String(deliveryArea || '').trim();
+  if (Object.prototype.hasOwnProperty.call(DELIVERY_FEES_BY_AREA, area)) {
+    return Number(DELIVERY_FEES_BY_AREA[area]) || 0;
+  }
   const fee = Number(APP_CONFIG?.deliveryFee);
   return Number.isFinite(fee) && fee > 0 ? fee : 0;
 }
 
-function calculateOrderTotal(subtotal) {
+function calculateOrderTotal(subtotal, deliveryArea = '') {
   const base = Number(subtotal) || 0;
-  return Number((base + getDeliveryFee()).toFixed(2));
+  return Number((base + getDeliveryFee(deliveryArea)).toFixed(2));
 }
 
 function getEstimatedReadyMinutes() {
@@ -32,20 +63,25 @@ function getEstimatedReadyMinutes() {
 
 const BUSINESS_HOURS = {
   startHour: 7,
-  endHour: 16
+  startMinute: 0,
+  endHour: 16,
+  endMinute: 30
 };
+const DISABLE_BUSINESS_HOURS_CHECK = false;
 
 function getBusinessHoursLabel() {
-  return '7:00 صباحاً - 4:00 مساءً';
+  return '7:00 صباحاً - 4:30 مساءً';
 }
 
 function isWithinBusinessHours(now = new Date()) {
+  if (DISABLE_BUSINESS_HOURS_CHECK) return true;
+
   const date = now instanceof Date ? now : new Date(now);
   if (!Number.isFinite(date.getTime())) return false;
 
   const currentMinutes = (date.getHours() * 60) + date.getMinutes();
-  const startMinutes = BUSINESS_HOURS.startHour * 60;
-  const endMinutes = BUSINESS_HOURS.endHour * 60;
+  const startMinutes = (BUSINESS_HOURS.startHour * 60) + (BUSINESS_HOURS.startMinute || 0);
+  const endMinutes = (BUSINESS_HOURS.endHour * 60) + (BUSINESS_HOURS.endMinute || 0);
   return currentMinutes >= startMinutes && currentMinutes < endMinutes;
 }
 
@@ -54,17 +90,17 @@ function getNextOpeningDate(now = new Date()) {
   if (!Number.isFinite(date.getTime())) return null;
 
   const currentMinutes = (date.getHours() * 60) + date.getMinutes();
-  const startMinutes = BUSINESS_HOURS.startHour * 60;
-  const endMinutes = BUSINESS_HOURS.endHour * 60;
+  const startMinutes = (BUSINESS_HOURS.startHour * 60) + (BUSINESS_HOURS.startMinute || 0);
+  const endMinutes = (BUSINESS_HOURS.endHour * 60) + (BUSINESS_HOURS.endMinute || 0);
 
   if (currentMinutes < startMinutes) {
-    date.setHours(BUSINESS_HOURS.startHour, 0, 0, 0);
+    date.setHours(BUSINESS_HOURS.startHour, BUSINESS_HOURS.startMinute || 0, 0, 0);
     return date;
   }
 
   if (currentMinutes >= endMinutes) {
     date.setDate(date.getDate() + 1);
-    date.setHours(BUSINESS_HOURS.startHour, 0, 0, 0);
+    date.setHours(BUSINESS_HOURS.startHour, BUSINESS_HOURS.startMinute || 0, 0, 0);
     return date;
   }
 
@@ -112,11 +148,38 @@ function formatDeliveryFeeLabel(value = getDeliveryFee()) {
   return formatPrice(amount);
 }
 
-function buildPriceBreakdownCard(subtotal, totalId = 'priceDisplay') {
+function buildDeliveryAreasHint(selectedArea = '') {
+  const activeArea = String(selectedArea || '').trim();
+  const rows = DELIVERY_AREAS.map(area => {
+    const fee = formatDeliveryFeeLabel(getDeliveryFee(area));
+    const activeClass = area === activeArea ? ' is-active' : '';
+    return `
+      <span class="delivery-area-chip${activeClass}">
+        <span class="delivery-area-chip__name">${area}</span>
+        <span class="delivery-area-chip__fee">${fee}</span>
+      </span>
+    `;
+  }).join('');
+
+  return `
+    <div class="delivery-areas-hint" aria-label="تفاصيل أسعار مناطق التوصيل">
+      <div class="delivery-areas-hint__title">أسعار التوصيل حسب المنطقة</div>
+      <div class="delivery-areas-hint__chips">${rows}</div>
+    </div>
+  `;
+}
+
+function buildPriceBreakdownCard(subtotal, totalId = 'priceDisplay', deliveryArea = '') {
   const cleanSubtotal = Number(subtotal) || 0;
-  const deliveryFee = getDeliveryFee();
-  const total = calculateOrderTotal(cleanSubtotal);
+  const hasSelectedArea = Object.prototype.hasOwnProperty.call(
+    DELIVERY_FEES_BY_AREA,
+    String(deliveryArea || '').trim()
+  );
+  const deliveryFee = getDeliveryFee(deliveryArea);
+  const total = calculateOrderTotal(cleanSubtotal, deliveryArea);
   const idAttr = totalId ? ` id="${totalId}"` : '';
+  const deliveryFeeText = hasSelectedArea ? formatDeliveryFeeLabel(deliveryFee) : 'حسب منطقتك';
+  const totalText = hasSelectedArea ? formatPrice(total) : 'يُحسب بعد اختيار المنطقة';
 
   return `
     <div class="price-card price-card-breakdown">
@@ -126,11 +189,11 @@ function buildPriceBreakdownCard(subtotal, totalId = 'priceDisplay') {
       </div>
       <div class="price-line">
         <span class="price-label">خدمة التوصيل:</span>
-        <span class="price-value-sm">${formatDeliveryFeeLabel(deliveryFee)}</span>
+        <span class="price-value-sm">${deliveryFeeText}</span>
       </div>
       <div class="price-line total">
         <span class="price-label">الإجمالي:</span>
-        <span class="price-value"${idAttr}>${formatPrice(total)}</span>
+        <span class="price-value"${idAttr}>${totalText}</span>
       </div>
     </div>
   `;
@@ -379,7 +442,7 @@ function updateCartDisplay() {
         تكرار الطلب: <b>${currentPackage.isRecurring ? 'نعم' : 'لا'}</b>
       </div>
       <div class="package-price-display">
-        الإجمالي (${getDeliveryFee() > 0 ? 'شامل التوصيل' : 'التوصيل مجاني'}): <span>${formatPrice(calculateOrderTotal(currentPackage.price))}</span>
+        الإجمالي قبل التوصيل: <span>${formatPrice(Number(currentPackage.price) || 0)}</span>
       </div>
     </div>
   `;
@@ -638,11 +701,11 @@ function renderOrderCard(order) {
     ? (Number(order?.subtotalPrice) || 0)
     : (Number(order?.price) || 0);
   const deliveryFee = hasBreakdown
-    ? (Number.isFinite(Number(order?.deliveryFee)) ? Number(order.deliveryFee) : getDeliveryFee())
-    : getDeliveryFee();
+    ? (Number.isFinite(Number(order?.deliveryFee)) ? Number(order.deliveryFee) : getDeliveryFee(order?.deliveryArea))
+    : getDeliveryFee(order?.deliveryArea);
   const total = hasBreakdown
-    ? (Number(order?.price) || calculateOrderTotal(subtotal))
-    : calculateOrderTotal(subtotal);
+    ? (Number(order?.price) || calculateOrderTotal(subtotal, order?.deliveryArea))
+    : calculateOrderTotal(subtotal, order?.deliveryArea);
 
   return `
     <article class="orders-card">
@@ -706,6 +769,7 @@ function renderCart() {
 
   const contentEl = getElement('cartContent');
   if (!contentEl) return;
+  const selectedDeliveryArea = getSelectedDeliveryArea();
 
   // Build items list
   const itemsDisplay = Object.entries(currentPackage.items)
@@ -741,11 +805,39 @@ function renderCart() {
         </select>
       </div>
 
-      ${buildPriceBreakdownCard(currentPackage.price, 'priceDisplay')}
+      <div class="frequency-selector-inline">
+        <label>منطقة التوصيل:</label>
+        <select id="cartDeliveryArea">
+          <option value="">اختر المنطقة</option>
+          ${DELIVERY_AREAS.map(area => `<option value="${area}" ${area === selectedDeliveryArea ? 'selected' : ''}>${area}</option>`).join('')}
+        </select>
+      </div>
+      <div id="cartDeliveryAreasHint">${buildDeliveryAreasHint(selectedDeliveryArea)}</div>
+
+      <div id="checkoutPriceBreakdown">
+        ${buildPriceBreakdownCard(currentPackage.price, 'priceDisplay', selectedDeliveryArea)}
+      </div>
     </div>
   `;
 
   contentEl.innerHTML = packageHtml;
+  const cartDeliveryArea = getElement('cartDeliveryArea');
+  const cartDeliveryAreasHint = getElement('cartDeliveryAreasHint');
+  const checkoutPriceBreakdown = getElement('checkoutPriceBreakdown');
+  if (cartDeliveryArea && checkoutPriceBreakdown) {
+    const updateCartPricing = () => {
+      const area = cartDeliveryArea.value || '';
+      setSelectedDeliveryArea(area);
+      if (cartDeliveryAreasHint) cartDeliveryAreasHint.innerHTML = buildDeliveryAreasHint(area);
+      checkoutPriceBreakdown.innerHTML = buildPriceBreakdownCard(
+        currentPackage?.price || 0,
+        'priceDisplay',
+        area
+      );
+    };
+    cartDeliveryArea.addEventListener('change', updateCartPricing);
+    updateCartPricing();
+  }
 
   attachSwipeHandlers(contentEl, false);
   updateCheckoutCTA(true);
@@ -795,6 +887,7 @@ function renderCheckout() {
   const summaryEl = getElement('checkoutSummary');
   const formWrapper = getElement('checkoutFormWrapper');
   if (!summaryEl || !formWrapper) return;
+  const selectedDeliveryArea = getSelectedDeliveryArea();
 
   const itemsDisplay = Object.entries(currentPackage.items)
     .map(([itemId, qty]) => {
@@ -829,7 +922,9 @@ function renderCheckout() {
           ${frequencyOptions}
         </select>
       </div>
-      ${buildPriceBreakdownCard(currentPackage.price, 'priceDisplay')}
+      <div id="checkoutPriceBreakdown">
+        ${buildPriceBreakdownCard(currentPackage.price, 'priceDisplay', selectedDeliveryArea)}
+      </div>
     </div>
   `;
 
@@ -844,8 +939,16 @@ function renderCheckout() {
         <input type="tel" id="phone" name="phone" placeholder="01012345678" required>
       </div>
       <div class="form-group">
+        <label for="deliveryArea">📌 منطقة التوصيل</label>
+        <select id="deliveryArea" name="deliveryArea" required>
+          <option value="">اختر المنطقة</option>
+          ${DELIVERY_AREAS.map(area => `<option value="${area}" ${area === selectedDeliveryArea ? 'selected' : ''}>${area}</option>`).join('')}
+        </select>
+        <div id="checkoutDeliveryAreasHint">${buildDeliveryAreasHint(selectedDeliveryArea)}</div>
+      </div>
+      <div class="form-group">
         <label for="address">📍 عنوان التوصيل</label>
-        <textarea id="address" name="address" placeholder="المحافظة - المدينة - الشارع" rows="3" required></textarea>
+        <textarea id="address" name="address" placeholder="اكتب الشارع ورقم البيت بالتفصيل" rows="3" required></textarea>
       </div>
       <div class="form-group checkbox">
         <label>
@@ -886,6 +989,23 @@ function renderCheckout() {
       submitBtn.title = `ساعات العمل: ${getBusinessHoursLabel()}`;
     }
     orderForm.addEventListener('submit', handleCheckoutSubmit);
+  }
+  const deliveryAreaSelect = getElement('deliveryArea');
+  const checkoutDeliveryAreasHint = getElement('checkoutDeliveryAreasHint');
+  const checkoutPriceBreakdown = getElement('checkoutPriceBreakdown');
+  if (deliveryAreaSelect && checkoutPriceBreakdown) {
+    const updateCheckoutPricing = () => {
+      const area = deliveryAreaSelect.value || '';
+      setSelectedDeliveryArea(area);
+      if (checkoutDeliveryAreasHint) checkoutDeliveryAreasHint.innerHTML = buildDeliveryAreasHint(area);
+      checkoutPriceBreakdown.innerHTML = buildPriceBreakdownCard(
+        currentPackage?.price || 0,
+        'priceDisplay',
+        area
+      );
+    };
+    deliveryAreaSelect.addEventListener('change', updateCheckoutPricing);
+    updateCheckoutPricing();
   }
   setupPaymentOptions();
   attachSwipeHandlers(summaryEl, true);
@@ -1050,8 +1170,11 @@ function appendOrderToHistory(orderData) {
     name: orderData.name,
     phone: orderData.phone,
     address: orderData.address,
+    deliveryArea: orderData.deliveryArea || '',
     subtotalPrice: Number(orderData.subtotalPrice) || 0,
-    deliveryFee: Number.isFinite(Number(orderData.deliveryFee)) ? Number(orderData.deliveryFee) : getDeliveryFee(),
+    deliveryFee: Number.isFinite(Number(orderData.deliveryFee))
+      ? Number(orderData.deliveryFee)
+      : getDeliveryFee(orderData.deliveryArea),
     price: Number(orderData.price) || 0,
     frequency: orderData.frequency || 'مرة واحدة',
     paymentMethod: orderData.paymentMethod || '',
@@ -1096,11 +1219,15 @@ async function handleCheckoutSubmit(e) {
 
   const name = getElement('name').value.trim();
   const phone = getElement('phone').value.trim();
+  const deliveryArea = getElement('deliveryArea')?.value.trim() || '';
   const address = getElement('address').value.trim();
   const isRecurring = getElement('recurring')?.checked || false;
   if (!validateName(name)) { showErrorMessage(ERROR_MESSAGES.INVALID_NAME); return; }
   if (!validatePhone(phone)) { showErrorMessage(ERROR_MESSAGES.INVALID_PHONE); return; }
+  if (!deliveryArea) { showWarningMessage('اختر منطقة التوصيل أولاً'); return; }
+  setSelectedDeliveryArea(deliveryArea);
   if (!validateAddress(address)) { showErrorMessage(ERROR_MESSAGES.INVALID_ADDRESS); return; }
+  const fullAddress = `${deliveryArea} - ${address}`;
 
   const paymentMethodInput = document.querySelector('input[name="paymentMethod"]:checked');
   const paymentMethod = paymentMethodInput ? paymentMethodInput.value : '';
@@ -1113,8 +1240,8 @@ async function handleCheckoutSubmit(e) {
   const paymentLabel = paymentMethod === 'vodafone' ? 'فودافون كاش' : 'الدفع عند الاستلام';
   const repeatEveryDays = isRecurring ? currentPackage.deliveryDays : 0;
   const subtotalPrice = Number(currentPackage.price) || 0;
-  const deliveryFee = getDeliveryFee();
-  const totalPrice = calculateOrderTotal(subtotalPrice);
+  const deliveryFee = getDeliveryFee(deliveryArea);
+  const totalPrice = calculateOrderTotal(subtotalPrice, deliveryArea);
   const estimatedReadyMinutes = getEstimatedReadyMinutes();
   const expectedReadyDate = calculateEstimatedReadyAt(new Date(), estimatedReadyMinutes);
   const expectedReadyAt = expectedReadyDate ? expectedReadyDate.toISOString() : '';
@@ -1123,7 +1250,8 @@ async function handleCheckoutSubmit(e) {
     orderId: generateOrderId(),
     name,
     phone,
-    address,
+    address: fullAddress,
+    deliveryArea,
     subtotalPrice,
     deliveryFee,
     price: totalPrice,
@@ -1174,8 +1302,16 @@ function addOrderFormToCart() {
         <input type="tel" id="phone" name="phone" placeholder="01012345678" required>
       </div>
       <div class="form-group">
+        <label for="deliveryArea">📌 منطقة التوصيل</label>
+        <select id="deliveryArea" name="deliveryArea" required>
+          <option value="">اختر المنطقة</option>
+          ${DELIVERY_AREAS.map(area => `<option value="${area}">${area}</option>`).join('')}
+        </select>
+        <div id="checkoutDeliveryAreasHint">${buildDeliveryAreasHint('')}</div>
+      </div>
+      <div class="form-group">
         <label for="address">📍 عنوان التوصيل</label>
-        <textarea id="address" name="address" placeholder="المحافظة - المدينة - الشارع" rows="3" required></textarea>
+        <textarea id="address" name="address" placeholder="اكتب الشارع ورقم البيت بالتفصيل" rows="3" required></textarea>
       </div>
       <div class="form-group checkbox">
         <label>
@@ -1199,16 +1335,20 @@ async function handleOrderSubmit(e) {
 
   const name = getElement('name').value.trim();
   const phone = getElement('phone').value.trim();
+  const deliveryArea = getElement('deliveryArea')?.value.trim() || '';
   const address = getElement('address').value.trim();
   const isRecurring = getElement('recurring')?.checked || false;
   if (!validateName(name)) { showErrorMessage(ERROR_MESSAGES.INVALID_NAME); return; }
   if (!validatePhone(phone)) { showErrorMessage(ERROR_MESSAGES.INVALID_PHONE); return; }
+  if (!deliveryArea) { showWarningMessage('اختر منطقة التوصيل أولاً'); return; }
+  setSelectedDeliveryArea(deliveryArea);
   if (!validateAddress(address)) { showErrorMessage(ERROR_MESSAGES.INVALID_ADDRESS); return; }
+  const fullAddress = `${deliveryArea} - ${address}`;
 
   const repeatEveryDays = isRecurring ? currentPackage.deliveryDays : 0;
   const subtotalPrice = Number(currentPackage.price) || 0;
-  const deliveryFee = getDeliveryFee();
-  const totalPrice = calculateOrderTotal(subtotalPrice);
+  const deliveryFee = getDeliveryFee(deliveryArea);
+  const totalPrice = calculateOrderTotal(subtotalPrice, deliveryArea);
   const estimatedReadyMinutes = getEstimatedReadyMinutes();
   const expectedReadyDate = calculateEstimatedReadyAt(new Date(), estimatedReadyMinutes);
   const expectedReadyAt = expectedReadyDate ? expectedReadyDate.toISOString() : '';
@@ -1217,7 +1357,8 @@ async function handleOrderSubmit(e) {
     orderId: generateOrderId(),
     name,
     phone,
-    address,
+    address: fullAddress,
+    deliveryArea,
     subtotalPrice,
     deliveryFee,
     price: totalPrice,
@@ -1259,7 +1400,7 @@ function buildOrderSummary(orderData, name) {
     .join('');
   const deliveryFeeValue = Number.isFinite(Number(orderData.deliveryFee))
     ? Number(orderData.deliveryFee)
-    : getDeliveryFee();
+    : getDeliveryFee(orderData.deliveryArea);
   const estimatedReadyMinutes = Number.isFinite(Number(orderData.estimatedReadyMinutes))
     ? Math.round(Number(orderData.estimatedReadyMinutes))
     : getEstimatedReadyMinutes();
@@ -1269,6 +1410,7 @@ function buildOrderSummary(orderData, name) {
       <div><b>🆔 رقم الطلب:</b> ${sanitizeHTML(orderData.orderId || '-')}</div>
       <div><b>👤 الاسم:</b> ${sanitizeHTML(name)}</div>
       <div><b>📞 الهاتف:</b> ${orderData.phone}</div>
+      <div><b>📌 منطقة التوصيل:</b> ${sanitizeHTML(orderData.deliveryArea || '-')}</div>
       <div><b>📍 العنوان:</b> ${sanitizeHTML(orderData.address)}</div>
       <hr style="margin: 12px 0;">
       <div><b>📦 المحتويات:</b></div>
@@ -1299,7 +1441,9 @@ async function submitOrderToBackend(orderData) {
         address: orderData.address,
         details: formatOrderDetails(orderData.packageData),
         subtotal_price: orderData.subtotalPrice || 0,
-        delivery_fee: Number.isFinite(Number(orderData.deliveryFee)) ? Number(orderData.deliveryFee) : getDeliveryFee(),
+        delivery_fee: Number.isFinite(Number(orderData.deliveryFee))
+          ? Number(orderData.deliveryFee)
+          : getDeliveryFee(orderData.deliveryArea),
         total_price: orderData.price,
         expected_ready_at: orderData.expectedReadyAt || '',
         estimated_ready_minutes: Number(orderData.estimatedReadyMinutes) || getEstimatedReadyMinutes(),
@@ -1368,4 +1512,3 @@ document.addEventListener('prices:updated', () => {
   }
 });
 console.log('✅ One Market v1.0 - Script loaded');
-

@@ -81,10 +81,10 @@ const PRODUCTS = {
     unitPrice: null
   },
   chili: {
-    label: '🌶️ شطة',
-    emoji: '🌶️',
-    name: 'شطة',
-    unit: 'وحدة',
+    label: '🫑 فلفل حار أخضر',
+    emoji: '🫑',
+    name: 'فلفل حار أخضر',
+    unit: 'كجم',
     unitPrice: null
   },
   potato: {
@@ -95,9 +95,9 @@ const PRODUCTS = {
     unitPrice: null
   },
   hot_pepper: {
-    label: '🌶️ فلفل حار',
-    emoji: '🌶️',
-    name: 'فلفل حار',
+    label: '🫑 فلفل حار أخضر',
+    emoji: '🫑',
+    name: 'فلفل حار أخضر',
     unit: 'كجم',
     unitPrice: null
   },
@@ -475,7 +475,7 @@ const PACKAGES = {
       eggplant: 0.75,
       carrot: 0.75,
       bell_pepper: 0.75,
-      chili: 1,
+      chili: 0.25,
       potato: 2.5,
       hot_pepper: 0,
       green_beans: 0,
@@ -545,7 +545,7 @@ const PACKAGES = {
       eggplant: 1.5,
       carrot: 1.5,
       bell_pepper: 1.5,
-      chili: 2,
+      chili: 0.5,
       potato: 5,
       hot_pepper: 0,
       green_beans: 0,
@@ -647,6 +647,14 @@ function buildPriceApiUrls() {
     }
   }
 
+  // Local probing is opt-in to avoid noisy console errors on static frontend servers.
+  let enableLocalPriceApi = false;
+  try {
+    const winFlag = typeof window !== 'undefined' ? window.ENABLE_LOCAL_PRICE_API : false;
+    const storedFlag = typeof window !== 'undefined' ? localStorage.getItem('enableLocalPriceApi') : '';
+    enableLocalPriceApi = winFlag === true || String(storedFlag).toLowerCase() === 'true';
+  } catch (_) {}
+
   // Optional override for staging/private backend endpoint
   try {
     const winUrl = typeof window !== 'undefined' ? window.PRICE_API_URL : '';
@@ -656,13 +664,14 @@ function buildPriceApiUrls() {
       .forEach(u => urls.push(String(u).trim().replace(/\/$/, '')));
   } catch (_) {}
 
-  if (isLocalRuntime) {
-    localUrls.forEach(u => urls.push(u));
-    if (sameOriginUrl) urls.push(sameOriginUrl);
-    urls.push(railwayUrl);
-  } else {
-    if (sameOriginUrl) urls.push(sameOriginUrl);
-    urls.push(railwayUrl);
+  // Default behavior: production endpoint first.
+  urls.push(railwayUrl);
+
+  // Same-origin endpoint stays as optional fallback (useful when frontend + backend share domain).
+  if (sameOriginUrl) urls.push(sameOriginUrl);
+
+  // Localhost endpoints are enabled only when explicitly requested.
+  if (enableLocalPriceApi && isLocalRuntime) {
     localUrls.forEach(u => urls.push(u));
   }
 

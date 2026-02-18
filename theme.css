@@ -43,6 +43,69 @@ body {
 	line-height: 1.6;
 }
 
+/* ===== RAMADAN THEME ===== */
+body.theme-ramadan {
+	background:
+		radial-gradient(900px 420px at 10% -10%, rgba(245, 203, 92, 0.18), transparent 58%),
+		radial-gradient(1000px 540px at 88% -4%, rgba(26, 121, 84, 0.26), transparent 62%),
+		linear-gradient(180deg, #0f2c22 0%, #123329 46%, #183d31 100%);
+	color: #f7fbf8;
+}
+
+body.theme-ramadan header {
+	background: linear-gradient(135deg, #126147 0%, #0d4e39 52%, #114f3b 100%);
+	box-shadow: 0 22px 50px rgba(4, 22, 16, 0.34);
+}
+
+body.theme-ramadan header::before {
+	background:
+		radial-gradient(460px 240px at 12% 10%, rgba(245, 203, 92, 0.34), transparent 60%),
+		radial-gradient(700px 280px at 88% 0%, rgba(255, 255, 255, 0.17), transparent 72%);
+}
+
+body.theme-ramadan header::after {
+	content: "رمضان كريم 🌙";
+	position: absolute;
+	inset-inline-start: 24px;
+	bottom: 16px;
+	padding: 6px 14px;
+	border-radius: 999px;
+	background: rgba(245, 203, 92, 0.2);
+	border: 1px solid rgba(245, 203, 92, 0.45);
+	color: #ffe8a7;
+	font-weight: 800;
+	font-size: 0.84rem;
+	letter-spacing: 0.2px;
+	backdrop-filter: blur(4px);
+	pointer-events: none;
+	z-index: 1;
+}
+
+body.theme-ramadan .site-nav a {
+	background: rgba(255, 255, 255, 0.1);
+	border: 1px solid rgba(245, 203, 92, 0.2);
+}
+
+body.theme-ramadan .site-nav a:hover {
+	background: rgba(245, 203, 92, 0.2);
+}
+
+body.theme-ramadan .cart-icon-header {
+	background: rgba(255, 255, 255, 0.1);
+	border-color: rgba(245, 203, 92, 0.24);
+}
+
+body.theme-ramadan .package-summary-column,
+body.theme-ramadan .order-form-column,
+body.theme-ramadan .orders-section,
+body.theme-ramadan .package-card,
+body.theme-ramadan .recommend-card,
+body.theme-ramadan .products-search-wrap,
+body.theme-ramadan .products-sort-select,
+body.theme-ramadan .products-filter-btn {
+	background-color: #f9fdf9;
+}
+
 /* ===== HEADER ===== */
 header {
 	background:
@@ -122,12 +185,28 @@ header::before {
 .brand-text p {
 	margin: 0;
 	font-size: 0.95rem;
-	opacity: 0.96;
-	font-weight: 600;
+	font-weight: 800;
 	color: #f7e2b3;
-	text-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+	text-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
 	position: relative;
 	z-index: 1;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	width: fit-content;
+	padding: 6px 16px;
+	border-radius: 999px;
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.08) 100%);
+	border: 1px solid rgba(247, 226, 179, 0.45);
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.2),
+		0 6px 14px rgba(0, 0, 0, 0.2);
+}
+
+.brand-text p::before {
+	content: "🌙";
+	line-height: 1;
+	font-size: 1rem;
 }
 
 @keyframes brand-pop {
@@ -191,7 +270,9 @@ header::before {
 	}
 
 	.brand-text p {
-		font-size: 0.9rem;
+		font-size: 0.86rem;
+		padding: 5px 12px;
+		gap: 6px;
 	}
 
 	.site-brand {

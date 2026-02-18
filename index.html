@@ -7,17 +7,17 @@
   <link rel="icon" type="image/svg+xml" href="logo.svg">
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <link rel="stylesheet" href="theme.css">
-  <link rel="stylesheet" href="main.css">
-  <link rel="stylesheet" href="responsive.css">
+  <link rel="stylesheet" href="theme.css?v=20260218">
+  <link rel="stylesheet" href="main.css?v=20260218">
+  <link rel="stylesheet" href="responsive.css?v=20260218">
 </head>
 <body>
   <!-- ===== Header ===== -->
   <header>
     <div class="site-brand">
-<div class="brand-text">
+      <div class="brand-text">
         <h1>One market</h1>
-        <p>خضار طازة يومياً — اختار منتجاتك بنفسك</p>
+        <p>رمضان كريم</p>
       </div>
     </div>
     <nav class="site-nav">
@@ -38,14 +38,59 @@
   <div class="container">
     <section class="products-showcase">
       <h2 class="section-title">✨ اختار منتجاتك</h2>
+      <!-- Integration: listing controls (search / category / sort) -->
+      <div class="products-toolbar" role="region" aria-label="أدوات تصفية المنتجات">
+        <label class="products-search-wrap" for="productsSearchInput">
+          <span class="products-search-icon" aria-hidden="true">🔎</span>
+          <input
+            id="productsSearchInput"
+            class="products-search-input"
+            type="search"
+            placeholder="ابحث عن منتج..."
+            autocomplete="off"
+            aria-label="ابحث عن منتج"
+          >
+        </label>
+
+        <div id="productsCategoryFilters" class="products-filters" role="group" aria-label="تصنيف المنتجات">
+          <button type="button" class="products-filter-btn is-active" data-category="all">الكل</button>
+          <button type="button" class="products-filter-btn" data-category="vegetables">خضار</button>
+          <button type="button" class="products-filter-btn" data-category="fruits">فواكه</button>
+          <button type="button" class="products-filter-btn" data-category="herbs">خضرة</button>
+        </div>
+
+        <label class="products-sort-wrap" for="productsSortSelect">
+          <span>ترتيب:</span>
+          <select id="productsSortSelect" class="products-sort-select" aria-label="ترتيب المنتجات">
+            <option value="popularity">الأكثر شعبية</option>
+            <option value="price_asc">السعر: الأقل أولاً</option>
+            <option value="price_desc">السعر: الأعلى أولاً</option>
+            <option value="name">الاسم (أ-ي)</option>
+          </select>
+        </label>
+      </div>
       
       <div id="productsGrid" class="products-grid-v2" aria-live="polite"></div>
       <p id="productsEmpty" class="products-empty" hidden>لا توجد منتجات متاحة حالياً.</p>
     </section>
 
+    <!-- Integration: dynamic recommendation rail -->
+    <section id="recommendationsSection" class="recommendations-section" aria-live="polite" hidden>
+      <div class="recommendations-head">
+        <h3>قد يعجبك أيضًا</h3>
+        <p>اقتراحات حسب اختياراتك الحالية</p>
+      </div>
+      <div id="recommendationsGrid" class="recommendations-grid"></div>
+    </section>
+
     <a id="quickCartBtn" class="quick-cart-btn" href="cart.html" aria-label="اذهب للعربة">
       <span class="quick-cart-label">اذهب للعربة</span>
       <span id="quickCartCount" class="quick-cart-count">0</span>
+    </a>
+    <!-- Integration: sticky cart icon + badge -->
+    <a id="stickyCartFab" class="sticky-cart-fab" href="cart.html" aria-label="العربة">
+      <span class="sticky-cart-fab__icon" aria-hidden="true">🛒</span>
+      <span id="stickyCartCount" class="sticky-cart-fab__count">0</span>
     </a>
 
     <a class="whatsapp-help" href="https://wa.me/201067465207" target="_blank" rel="noopener" style="display:block;text-align:center;margin:16px auto;padding:10px 14px;background:#25D366;color:#fff;border-radius:12px;max-width:340px;font-weight:700;">
@@ -54,12 +99,11 @@
   </div>
 
   <!-- Scripts in order: config → utils → main -->
-  <script src="js/config.js"></script>
-  <script src="js/utils.js"></script>
+  <script src="js/config.js?v=20260218"></script>
+  <script src="js/utils.js?v=20260218"></script>
   <script>
     (() => {
       const PRODUCT_IMAGE_MAP = Object.freeze({
-        tomato: 'tomato.png',
         bell_pepper: 'filfil.png'
       });
 
@@ -81,10 +125,26 @@
         'وحدة': 1
       });
 
+      const FRUIT_IDS = new Set([
+        'apple', 'orange', 'mandarin', 'lemon', 'lime', 'grapefruit', 'banana',
+        'grapes', 'mango', 'strawberry', 'watermelon', 'cantaloupe', 'melon',
+        'date', 'fig', 'pear', 'peach', 'apricot', 'plum', 'guava', 'pomegranate',
+        'cherry', 'kiwi', 'pineapple', 'coconut', 'avocado', 'blueberry',
+        'raspberry', 'blackberry'
+      ]);
+
+      const HERB_UNITS = new Set(['حزمة']);
+      const SKELETON_COUNT = 8;
       const quantities = {};
       const expandedEditors = {};
       const collapseTimers = {};
+      let searchDebounceId = null;
       const COLLAPSE_DELAY_MS = 3000;
+      const viewState = {
+        search: '',
+        category: 'all',
+        sort: 'popularity'
+      };
 
       function getStep(unit) {
         return STEP_BY_UNIT[unit] || 1;
@@ -227,11 +287,13 @@
         const countEl = document.getElementById('cartCount');
         const quickBtn = document.getElementById('quickCartBtn');
         const quickCountEl = document.getElementById('quickCartCount');
+        const stickyCountEl = document.getElementById('stickyCartCount');
         const itemsCount = Object.keys(selectedItems()).length;
 
         if (countEl) countEl.textContent = String(itemsCount);
 
         if (quickCountEl) quickCountEl.textContent = String(itemsCount);
+        if (stickyCountEl) stickyCountEl.textContent = String(itemsCount);
         if (quickBtn) quickBtn.classList.toggle('has-items', itemsCount > 0);
       }
 
@@ -243,6 +305,9 @@
           Object.keys(expandedEditors).forEach(productId => setEditorExpanded(productId, false));
           clearPackageFromStorage();
           updateCartCount();
+          document.dispatchEvent(new CustomEvent('cart:changed', {
+            detail: { items: {}, total: 0, count: 0 }
+          }));
           return;
         }
 
@@ -261,6 +326,13 @@
 
         savePackageToStorage(packageData);
         updateCartCount();
+        document.dispatchEvent(new CustomEvent('cart:changed', {
+          detail: {
+            items,
+            total: packageData.price,
+            count: Object.keys(items).length
+          }
+        }));
       }
 
       function buildCard(productId, product) {
@@ -273,7 +345,13 @@
 
         const imagePath = PRODUCT_IMAGE_MAP[productId];
         const visual = imagePath
-          ? `<img class="market-product-image" src="${imagePath}" alt="${product.name}" loading="lazy">`
+          ? `<img
+               class="market-product-image lazy-product-image"
+               src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+               data-src="${imagePath}"
+               alt="${product.name}"
+               loading="lazy"
+             >`
           : `<span class="market-product-emoji" aria-hidden="true">${product.emoji || '🧺'}</span>`;
 
         const priceHtml = priceParts
@@ -285,8 +363,15 @@
           : `<div class="product-price-row-v2 unavailable">غير متوفر</div>`;
 
         return `
-          <article class="market-product-card" data-product="${productId}" data-unit="${unit}">
-            <div class="market-product-media">
+          <article
+            class="market-product-card"
+            data-product="${productId}"
+            data-unit="${unit}"
+            data-category="${getProductCategory(productId, product)}"
+            data-price="${Number(product.unitPrice) || 0}"
+            tabindex="0"
+          >
+            <div class="market-product-media is-loading">
               ${badge}
               ${visual}
               <button type="button" class="product-add-btn" data-action="add" data-product="${productId}" aria-label="إضافة ${product.name}">
@@ -306,6 +391,94 @@
             ${priceHtml}
           </article>
         `;
+      }
+
+      function buildSkeletonCards(count = SKELETON_COUNT) {
+        return Array.from({ length: count }, () => `
+          <article class="market-product-card skeleton-card" aria-hidden="true">
+            <div class="market-product-media skeleton-block"></div>
+            <div class="skeleton-line skeleton-line-lg"></div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line skeleton-line-price"></div>
+          </article>
+        `).join('');
+      }
+
+      function normalizeSearchText(text) {
+        return String(text || '')
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, ' ');
+      }
+
+      function getProductCategory(productId, product) {
+        if (FRUIT_IDS.has(productId)) return 'fruits';
+        if (HERB_UNITS.has(product?.unit)) return 'herbs';
+        return 'vegetables';
+      }
+
+      function getVisibleProducts() {
+        const allProducts = getAvailableProducts();
+        const searchTerm = normalizeSearchText(viewState.search);
+        const category = viewState.category;
+        const sortMode = viewState.sort;
+
+        const filtered = allProducts.filter(([productId, product]) => {
+          if (category !== 'all' && getProductCategory(productId, product) !== category) return false;
+          if (!searchTerm) return true;
+          const haystack = normalizeSearchText(`${product.name || ''} ${product.label || ''}`);
+          return haystack.includes(searchTerm);
+        });
+
+        filtered.sort(([idA, productA], [idB, productB]) => {
+          const priceA = Number(productA?.unitPrice) || 0;
+          const priceB = Number(productB?.unitPrice) || 0;
+
+          if (sortMode === 'price_asc') return priceA - priceB || featuredRank(idA) - featuredRank(idB);
+          if (sortMode === 'price_desc') return priceB - priceA || featuredRank(idA) - featuredRank(idB);
+          if (sortMode === 'name') return String(productA.name || '').localeCompare(String(productB.name || ''), 'ar');
+          return featuredRank(idA) - featuredRank(idB) || String(productA.name || '').localeCompare(String(productB.name || ''), 'ar');
+        });
+
+        return filtered;
+      }
+
+      function bindToolbarEvents() {
+        const searchInput = document.getElementById('productsSearchInput');
+        const sortSelect = document.getElementById('productsSortSelect');
+        const filtersWrap = document.getElementById('productsCategoryFilters');
+
+        if (searchInput && !searchInput.dataset.bound) {
+          searchInput.addEventListener('input', () => {
+            viewState.search = searchInput.value || '';
+            if (searchDebounceId) window.clearTimeout(searchDebounceId);
+            searchDebounceId = window.setTimeout(() => {
+              renderProducts();
+            }, 160);
+          });
+          searchInput.dataset.bound = 'true';
+        }
+
+        if (sortSelect && !sortSelect.dataset.bound) {
+          sortSelect.addEventListener('change', () => {
+            viewState.sort = sortSelect.value || 'popularity';
+            renderProducts();
+          });
+          sortSelect.dataset.bound = 'true';
+        }
+
+        if (filtersWrap && !filtersWrap.dataset.bound) {
+          filtersWrap.addEventListener('click', (event) => {
+            const btn = event.target.closest('button[data-category]');
+            if (!btn) return;
+            viewState.category = btn.dataset.category || 'all';
+            filtersWrap.querySelectorAll('.products-filter-btn').forEach(el => {
+              el.classList.toggle('is-active', el === btn);
+            });
+            renderProducts();
+          });
+          filtersWrap.dataset.bound = 'true';
+        }
       }
 
       function updateCardState(card, qty) {
@@ -348,7 +521,7 @@
         const emptyEl = document.getElementById('productsEmpty');
         if (!grid) return;
 
-        const available = getAvailableProducts();
+        const available = getVisibleProducts();
 
         if (!available.length) {
           grid.innerHTML = '';
@@ -369,6 +542,10 @@
           grid.addEventListener('click', handleProductAction);
           grid.dataset.bound = 'true';
         }
+
+        document.dispatchEvent(new CustomEvent('products:rendered', {
+          detail: { visibleProductIds: available.map(([id]) => id) }
+        }));
       }
 
       function handleProductAction(event) {
@@ -408,12 +585,23 @@
         }
 
         updateCardState(card, nextQty);
+        if (action === 'add' || action === 'increase') {
+          card.classList.add('card-pop');
+          button.classList.add('btn-bounce');
+          window.setTimeout(() => {
+            card.classList.remove('card-pop');
+            button.classList.remove('btn-bounce');
+          }, 260);
+        }
         saveCurrentSelection();
       }
 
       async function initProductsPage() {
+        bindToolbarEvents();
         const stored = getStoredItems();
         Object.assign(quantities, stored);
+        const grid = document.getElementById('productsGrid');
+        if (grid) grid.innerHTML = buildSkeletonCards();
 
         try {
           await loadProductPrices();
@@ -432,9 +620,19 @@
         renderProducts();
         saveCurrentSelection();
       });
+      document.addEventListener('cart:external-updated', () => {
+        Object.keys(quantities).forEach((id) => {
+          delete quantities[id];
+          setEditorExpanded(id, false);
+        });
+        Object.assign(quantities, getStoredItems());
+        pruneUnavailableQuantities();
+        renderProducts();
+        updateCartCount();
+      });
     })();
   </script>
-  <script src="js/main.js"></script>
+  <script src="js/main.js?v=20260218"></script>
 </body>
 </html>
 
