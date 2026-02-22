@@ -66,22 +66,15 @@ const BUSINESS_HOURS_WINDOWS = Object.freeze([
   {
     startHour: 7,
     startMinute: 0,
-    endHour: 16,
-    endMinute: 30,
-    label: '7:00 صباحاً - 4:30 مساءً'
-  },
-  {
-    startHour: 18,
-    startMinute: 30,
-    endHour: 24,
+    endHour: 15,
     endMinute: 0,
-    label: '6:30 مساءً - 12:00 منتصف الليل'
+    label: '7:00 صباحاً - 3:00 مساءً'
   }
 ]);
 const DISABLE_BUSINESS_HOURS_CHECK = false;
 
 function getBusinessHoursLabel() {
-  return `مواعيد رمضان: ${BUSINESS_HOURS_WINDOWS[0].label}، مع إغلاق وقت الإفطار، ثم ${BUSINESS_HOURS_WINDOWS[1].label}`;
+  return `مواعيد رمضان: ${BUSINESS_HOURS_WINDOWS[0].label}. وكل عام وأنتم بخير`;
 }
 
 function toMinutes(hour = 0, minute = 0) {
