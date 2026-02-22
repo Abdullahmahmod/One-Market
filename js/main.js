@@ -11,11 +11,12 @@
 
 let currentPackage = null;
 let pricesLoaded = false;
-const DELIVERY_AREAS = ['الأقصر المدينة', 'البغدادي', 'الحبيل'];
+const DELIVERY_AREAS = ['الأقصر المدينة', 'البغدادي', 'الحبيل', 'البياضية'];
 const DELIVERY_FEES_BY_AREA = Object.freeze({
   'الأقصر المدينة': 15,
   'الحبيل': 10,
-  'البغدادي': 10
+  'البغدادي': 10,
+  'البياضية': 10
 });
 const DELIVERY_AREA_STORAGE_KEY = 'selectedDeliveryArea';
 const API_BASE = (typeof window !== 'undefined' && window.API_BASE_URL)
@@ -61,16 +62,49 @@ function getEstimatedReadyMinutes() {
   return Number.isFinite(minutes) && minutes > 0 ? Math.round(minutes) : 45;
 }
 
-const BUSINESS_HOURS = {
-  startHour: 7,
-  startMinute: 0,
-  endHour: 16,
-  endMinute: 30
-};
+const BUSINESS_HOURS_WINDOWS = Object.freeze([
+  {
+    startHour: 7,
+    startMinute: 0,
+    endHour: 16,
+    endMinute: 30,
+    label: '7:00 صباحاً - 4:30 مساءً'
+  },
+  {
+    startHour: 18,
+    startMinute: 30,
+    endHour: 24,
+    endMinute: 0,
+    label: '6:30 مساءً - 12:00 منتصف الليل'
+  }
+]);
 const DISABLE_BUSINESS_HOURS_CHECK = false;
 
 function getBusinessHoursLabel() {
-  return '7:00 صباحاً - 4:30 مساءً';
+  return `مواعيد رمضان: ${BUSINESS_HOURS_WINDOWS[0].label}، مع إغلاق وقت الإفطار، ثم ${BUSINESS_HOURS_WINDOWS[1].label}`;
+}
+
+function toMinutes(hour = 0, minute = 0) {
+  return (Number(hour) * 60) + Number(minute || 0);
+}
+
+function getBusinessWindowsInMinutes() {
+  return BUSINESS_HOURS_WINDOWS.map(window => ({
+    ...window,
+    startMinutes: toMinutes(window.startHour, window.startMinute),
+    endMinutes: toMinutes(window.endHour, window.endMinute)
+  }));
+}
+
+function formatArabicClock(hour = 0, minute = 0) {
+  const normalizedHour = Number(hour);
+  const normalizedMinute = Number(minute || 0);
+  const minuteText = String(normalizedMinute).padStart(2, '0');
+
+  if (normalizedHour === 0 || normalizedHour === 24) return `12:${minuteText} منتصف الليل`;
+  if (normalizedHour < 12) return `${normalizedHour}:${minuteText} صباحاً`;
+  if (normalizedHour === 12) return `12:${minuteText} مساءً`;
+  return `${normalizedHour - 12}:${minuteText} مساءً`;
 }
 
 function isWithinBusinessHours(now = new Date()) {
@@ -80,9 +114,9 @@ function isWithinBusinessHours(now = new Date()) {
   if (!Number.isFinite(date.getTime())) return false;
 
   const currentMinutes = (date.getHours() * 60) + date.getMinutes();
-  const startMinutes = (BUSINESS_HOURS.startHour * 60) + (BUSINESS_HOURS.startMinute || 0);
-  const endMinutes = (BUSINESS_HOURS.endHour * 60) + (BUSINESS_HOURS.endMinute || 0);
-  return currentMinutes >= startMinutes && currentMinutes < endMinutes;
+  return getBusinessWindowsInMinutes().some(window => (
+    currentMinutes >= window.startMinutes && currentMinutes < window.endMinutes
+  ));
 }
 
 function getNextOpeningDate(now = new Date()) {
@@ -90,20 +124,17 @@ function getNextOpeningDate(now = new Date()) {
   if (!Number.isFinite(date.getTime())) return null;
 
   const currentMinutes = (date.getHours() * 60) + date.getMinutes();
-  const startMinutes = (BUSINESS_HOURS.startHour * 60) + (BUSINESS_HOURS.startMinute || 0);
-  const endMinutes = (BUSINESS_HOURS.endHour * 60) + (BUSINESS_HOURS.endMinute || 0);
-
-  if (currentMinutes < startMinutes) {
-    date.setHours(BUSINESS_HOURS.startHour, BUSINESS_HOURS.startMinute || 0, 0, 0);
+  const windows = getBusinessWindowsInMinutes();
+  const upcomingToday = windows.find(window => currentMinutes < window.startMinutes);
+  if (upcomingToday) {
+    date.setHours(upcomingToday.startHour, upcomingToday.startMinute || 0, 0, 0);
     return date;
   }
 
-  if (currentMinutes >= endMinutes) {
-    date.setDate(date.getDate() + 1);
-    date.setHours(BUSINESS_HOURS.startHour, BUSINESS_HOURS.startMinute || 0, 0, 0);
-    return date;
-  }
-
+  const firstWindow = windows[0];
+  if (!firstWindow) return null;
+  date.setDate(date.getDate() + 1);
+  date.setHours(firstWindow.startHour, firstWindow.startMinute || 0, 0, 0);
   return date;
 }
 
@@ -118,12 +149,13 @@ function buildBusinessHoursClosedMessage(now = new Date()) {
   const todayKey = (new Date(now)).toDateString();
   const nextKey = nextOpen.toDateString();
   const dayLabel = todayKey === nextKey ? 'اليوم' : 'غداً';
-  return `نعتذر، المتجر مغلق حالياً. نستقبل الطلبات يومياً من ${hoursLabel}. يمكنك الإرسال ${dayLabel} الساعة 7:00 صباحاً.`;
+  const openingTime = formatArabicClock(nextOpen.getHours(), nextOpen.getMinutes());
+  return `نعتذر، المتجر مغلق حالياً. ${hoursLabel}. يمكنك الإرسال ${dayLabel} الساعة ${openingTime}.`;
 }
 
 function buildBusinessHoursNoticeMessage() {
   if (isWithinBusinessHours()) {
-    return `✅ نستقبل الطلبات الآن. ساعات العمل يومياً: ${getBusinessHoursLabel()}.`;
+    return `✅ نستقبل الطلبات الآن. ${getBusinessHoursLabel()}.`;
   }
   return `⛔ ${buildBusinessHoursClosedMessage()}`;
 }
