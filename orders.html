@@ -1,42 +1,89 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>طلباتي - One market</title>
+  <meta name="description" content="سجل الطلبات المحفوظة في One Market على نفس الجهاز.">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#11b76b">
+  <title>طلباتي - One Market</title>
   <link rel="icon" type="image/svg+xml" href="logo.svg">
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <link rel="stylesheet" href="theme.css?v=20260218">
-  <link rel="stylesheet" href="main.css?v=20260218">
-  <link rel="stylesheet" href="responsive.css?v=20260218">
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <link rel="stylesheet" href="theme.css?v=20260328">
+  <link rel="stylesheet" href="responsive.css?v=20260328">
 </head>
 <body>
-  <!-- ===== Header ===== -->
   <header>
     <div class="site-brand">
-<div class="brand-text">
-        <h1>One market</h1>
-      <p>رمضان كريم</p></div>
+      <div class="brand-icon">🌱</div>
+      <div class="brand-text">
+        <h1>One Market</h1>
+        <p class="brand-tagline">خضار وفواكه طازة يومياً</p>
+      </div>
     </div>
     <nav class="site-nav">
       <a href="index.html">الرئيسية</a>
       <a href="shop.html">المتجر</a>
       <a href="about.html">عن المتجر</a>
       <a href="checkout.html">الدفع</a>
-      <a href="orders.html">طلباتي</a>
-      <a href="cart.html">العربة</a>    </nav>
+      <a href="orders.html" class="active">طلباتي</a>
+      <a href="account.html">حسابي</a>
+      <a href="cart.html">العربة</a>
+    </nav>
+    <a href="cart.html" class="cart-icon-header" aria-label="العربة">
+      <span class="cart-icon">🛒</span>
+      <span class="cart-count" id="cartCount">0</span>
+    </a>
   </header>
 
-  <!-- ===== Main Content ===== -->
   <main class="cart-page">
     <div class="cart-wrapper">
       <a class="back-button" href="index.html">العودة للرئيسية</a>
 
+      <section id="ordersAuthPanel" class="orders-auth-panel">
+        <div id="ordersAuthLoggedOut" class="orders-auth-state" hidden>
+          <h3 class="orders-auth-title">تسجيل الدخول لمتابعة حالة طلباتك</h3>
+          <p class="cart-helper">بعد تسجيل الدخول هتقدر تشوف حالة الطلبات من أي جهاز على نفس الحساب.</p>
+          <p class="checkout-account-hint">لإدارة بياناتك ومتابعة الطلبات القديمة والجديدة من مكان واحد، افتح <a href="account.html">صفحة حسابي</a>.</p>
+          <div class="orders-auth-grid">
+            <div class="form-group">
+              <label for="ordersAuthEmail">البريد الإلكتروني</label>
+              <input id="ordersAuthEmail" type="email" placeholder="name@example.com" autocomplete="email">
+            </div>
+            <div class="form-group">
+              <label for="ordersAuthPassword">كلمة المرور</label>
+              <input id="ordersAuthPassword" type="password" placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <div class="form-group">
+              <label for="ordersAuthPhone">رقم الهاتف (اختياري)</label>
+              <input id="ordersAuthPhone" type="tel" placeholder="01012345678" autocomplete="tel">
+            </div>
+          </div>
+          <div class="orders-auth-actions">
+            <button id="ordersLoginBtn" type="button" class="submit-button">تسجيل دخول</button>
+            <button id="ordersRegisterBtn" type="button" class="secondary-button">إنشاء حساب جديد</button>
+          </div>
+        </div>
+
+        <div id="ordersAuthLoggedIn" class="orders-auth-state" hidden>
+          <h3 class="orders-auth-title">أهلاً بك</h3>
+          <p class="cart-helper">أنت مسجل دخول بـ <b id="ordersAuthUserEmail">-</b></p>
+          <div class="orders-auth-actions">
+            <button id="ordersLogoutBtn" type="button" class="secondary-button">تسجيل خروج</button>
+          </div>
+        </div>
+      </section>
+
       <section class="orders-section">
         <div class="orders-header">
-          <h2 class="cart-title">📦 طلباتي</h2>
-          <p class="cart-helper">إجمالي الطلبات المحفوظة: <b id="ordersCount">0</b></p>
+          <div>
+            <h2 class="cart-title">📦 طلباتي</h2>
+            <p class="cart-helper"><span id="ordersHint">إجمالي الطلبات المحفوظة على هذا الجهاز:</span> <b id="ordersCount">0</b></p>
+          </div>
           <button id="clearOrdersBtn" type="button" class="clear-orders-btn">حذف سجل الطلبات</button>
         </div>
         <div id="ordersList" class="orders-list" aria-live="polite"></div>
@@ -44,19 +91,38 @@
     </div>
   </main>
 
-  <!-- ===== Footer ===== -->
-  <footer>
-    <p>&copy; 2026 One market</p>
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <div class="site-footer__brand">
+        <strong>One Market</strong>
+        <p>تجربة شراء أوضح للخضار والفواكه مع توصيل محلي ودعم سريع.</p>
+        <div class="site-footer__chips">
+          <span>الدفع عند الاستلام</span>
+          <span>فودافون كاش</span>
+          <span>دعم واتساب</span>
+        </div>
+      </div>
+      <div class="site-footer__links">
+        <a href="about.html">عن المتجر</a>
+        <a href="faq.html">الأسئلة الشائعة</a>
+        <a href="privacy.html">الخصوصية</a>
+        <a href="terms.html">الشروط</a>
+        <a href="https://wa.me/201067465207" target="_blank" rel="noopener noreferrer">واتساب</a>
+      </div>
+      <div class="site-footer__meta">
+        <p>مناطق التوصيل: الأقصر المدينة، الحبيل، البغدادي، البياضية.</p>
+        <p>ساعات استقبال الطلبات: يومياً من 7:00 صباحاً إلى 3:00 مساءً.</p>
+        <p>&copy; 2026 One Market</p>
+      </div>
+    </div>
   </footer>
 
-  <script src="js/config.js?v=20260218"></script>
-  <script src="js/utils.js?v=20260218"></script>
-  <script src="js/main.js?v=20260218"></script>
+  <script src="js/config.js?v=20260328"></script>
+  <script src="js/utils.js?v=20260328"></script>
+  <script src="js/firebase-config.js?v=20260328"></script>
+  <script src="js/firebase-service.js?v=20260403"></script>
+  <script src="js/firebase-auth.js?v=20260328"></script>
+  <script type="module" src="js/firebase-bridge.js?v=20260328"></script>
+  <script src="js/main.js?v=20260403"></script>
 </body>
 </html>
-
-
-
-
-
-

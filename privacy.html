@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="سياسة الخصوصية في One Market وطريقة التعامل مع بيانات الطلبات.">
+  <meta name="theme-color" content="#11b76b">
+  <title>سياسة الخصوصية - One Market</title>
+  <link rel="icon" type="image/svg+xml" href="logo.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="theme.css?v=20260328">
+  <link rel="stylesheet" href="responsive.css?v=20260328">
+</head>
+<body>
+  <header>
+    <div class="site-brand">
+      <div class="brand-icon">🌱</div>
+      <div class="brand-text">
+        <h1>One Market</h1>
+        <p class="brand-tagline">خضار وفواكه طازة يومياً</p>
+      </div>
+    </div>
+    <nav class="site-nav">
+      <a href="index.html">الرئيسية</a>
+      <a href="shop.html">المتجر</a>
+      <a href="about.html">عن المتجر</a>
+      <a href="checkout.html">الدفع</a>
+      <a href="orders.html">طلباتي</a>
+      <a href="account.html">حسابي</a>
+      <a href="cart.html">العربة</a>
+    </nav>
+    <a href="cart.html" class="cart-icon-header" aria-label="العربة">
+      <span class="cart-icon">🛒</span>
+      <span class="cart-count" id="cartCount">0</span>
+    </a>
+  </header>
+
+  <main class="legal-page">
+    <section class="legal-hero">
+      <span class="store-hero__eyebrow">الخصوصية</span>
+      <h2>نتعامل مع بيانات الطلبات بالحد الأدنى اللازم لخدمة التوصيل والتواصل.</h2>
+      <p>هذه الصفحة توضّح بشكل مختصر ما الذي نجمعه ولماذا نستخدمه، مع عدم بيع البيانات لأي طرف آخر.</p>
+    </section>
+
+    <section class="legal-grid">
+      <article class="legal-card">
+        <h3>ما البيانات التي نطلبها</h3>
+        <ul class="legal-list">
+          <li>الاسم لتأكيد الطلب.</li>
+          <li>رقم الهاتف للتواصل حول التوصيل.</li>
+          <li>العنوان ومنطقة التوصيل لتنفيذ الطلب بشكل صحيح.</li>
+          <li>بيانات الدفع المرجعية فقط عند اختيار فودافون كاش.</li>
+        </ul>
+      </article>
+
+      <article class="legal-card">
+        <h3>كيف نستخدم البيانات</h3>
+        <p>
+          نستخدم البيانات لتجهيز الطلب، التواصل مع العميل عند الحاجة، وحساب التوصيل بشكل صحيح.
+          لا نستخدمها لأغراض دعائية مزعجة أو نشاركها مع جهات خارجية غير مرتبطة بتنفيذ الطلب.
+        </p>
+      </article>
+
+      <article class="legal-card">
+        <h3>التخزين المحلي على الجهاز</h3>
+        <p>
+          بعض معلومات العربة وسجل الطلبات قد تُحفظ محلياً في المتصفح على نفس الجهاز لتسهيل العودة إليها لاحقاً.
+          إذا حذفت بيانات المتصفح قد يختفي هذا السجل المحلي.
+        </p>
+      </article>
+
+      <article class="legal-card">
+        <h3>التواصل والحذف</h3>
+        <p>
+          إذا أردت تعديل بياناتك أو الاستفسار عن استخدامها، يمكنك التواصل عبر واتساب من خلال الروابط الموجودة في الموقع.
+        </p>
+      </article>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <div class="site-footer__brand">
+        <strong>One Market</strong>
+        <p>تجربة شراء أوضح للخضار والفواكه مع توصيل محلي ودعم سريع.</p>
+        <div class="site-footer__chips">
+          <span>الدفع عند الاستلام</span>
+          <span>فودافون كاش</span>
+          <span>دعم واتساب</span>
+        </div>
+      </div>
+      <div class="site-footer__links">
+        <a href="about.html">عن المتجر</a>
+        <a href="faq.html">الأسئلة الشائعة</a>
+        <a href="privacy.html">الخصوصية</a>
+        <a href="terms.html">الشروط</a>
+        <a href="https://wa.me/201067465207" target="_blank" rel="noopener noreferrer">واتساب</a>
+      </div>
+      <div class="site-footer__meta">
+        <p>مناطق التوصيل: الأقصر المدينة، الحبيل، البغدادي، البياضية.</p>
+        <p>ساعات استقبال الطلبات: يومياً من 7:00 صباحاً إلى 3:00 مساءً.</p>
+        <p>&copy; 2026 One Market</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (() => {
+      try {
+        const raw = localStorage.getItem('cartPackage');
+        const parsed = raw ? JSON.parse(raw) : null;
+        const count = Object.keys((parsed && parsed.items) || {}).length;
+        const badge = document.getElementById('cartCount');
+        if (badge) badge.textContent = String(count);
+      } catch (_) {}
+    })();
+  </script>
+</body>
+</html>

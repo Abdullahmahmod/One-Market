@@ -3,20 +3,45 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>المتجر - One market</title>
+  <meta name="description" content="متجر One Market - تصفح جميع المنتجات: الخضار والفواكه الطازة. اختر ما تريده وأضفه للعربة.">
+  <meta name="keywords" content="متجر خضار, فواكه طازة, متجر إلكتروني, شراء خضار أونلاين">
+  <meta name="author" content="One Market">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="المتجر - One Market">
+  <meta property="og:description" content="تصفح جميع منتجات One Market واختر ما تحتاجه من خضار وفواكه طازة بسهولة.">
+  <meta property="og:site_name" content="One Market">
+  <meta name="theme-color" content="#11b76b">
+  <title>المتجر - One Market</title>
   <link rel="icon" type="image/svg+xml" href="logo.svg">
+
+  <!-- ===== Performance Optimizations ===== -->
+  <link rel="preload" as="style" href="theme.css?v=20260328">
+  <link rel="preload" as="style" href="responsive.css?v=20260328">
+  <link rel="preload" as="font" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap">
+  <link rel="dns-prefetch" href="https://www.gstatic.com">
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+
+  <!-- ===== Stylesheets ===== -->
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="theme.css?v=20260218">
-  <link rel="stylesheet" href="main.css?v=20260218">
-  <link rel="stylesheet" href="responsive.css?v=20260218">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <link rel="stylesheet" href="theme.css?v=20260328">
+  <link rel="stylesheet" href="responsive.css?v=20260328">
+  <!-- Note: main.css is deprecated (archive only). All active styles in theme.css -->
+  <!-- <link rel="stylesheet" href="main.css?v=20260218"> -->
 </head>
 <body>
   <!-- ===== Header ===== -->
   <header>
     <div class="site-brand">
-<div class="brand-text">
-        <h1>One market</h1>
-        <p>رمضان كريم</p>
+      <div class="brand-icon">🌱</div>
+      <div class="brand-text">
+        <h1>One Market</h1>
+        <p class="brand-tagline">خضار وفواكه طازة يومياً</p>
       </div>
     </div>
     <nav class="site-nav">
@@ -25,29 +50,526 @@
       <a href="about.html">عن المتجر</a>
       <a href="checkout.html">الدفع</a>
       <a href="orders.html">طلباتي</a>
-      <a href="cart.html">العربة</a>    </nav>
+      <a href="account.html">حسابي</a>
+      <a href="cart.html">العربة</a>
+    </nav>
+    <a href="cart.html" class="cart-icon-header" aria-label="العربة">
+      <span class="cart-icon">🛒</span>
+      <span class="cart-count" id="cartCount">0</span>
+    </a>
   </header>
 
   <!-- ===== Main Content ===== -->
-  <main class="page-main">
-    <h2>المتجر</h2>
-    <p>قريباً: صفحات المنتجات والباقة الكاملة للشراء.</p>
-  </main>
+  <div class="container">
+    <section class="store-hero" aria-label="مقدمة صفحة المتجر">
+      <div class="store-hero__content">
+        <span class="store-hero__eyebrow">كل المنتجات في مكان واحد وبنفس التجربة السريعة</span>
+        <h2 class="store-hero__title">كل المنتجات في صفحة واحدة بتصفح أسرع.</h2>
+        <p class="store-hero__text">
+          ابحث ورتّب وأضف الكميات المناسبة مباشرة إلى العربة بسهولة.
+        </p>
+        <div class="store-hero__actions">
+          <a href="#shopProductsGrid" class="store-hero__cta store-hero__cta--primary">ابدأ التصفح</a>
+          <a href="cart.html" class="store-hero__cta store-hero__cta--secondary">راجع العربة</a>
+        </div>
+      </div>
+      <div class="store-hero__stats" aria-label="مميزات صفحة المتجر">
+        <article class="store-metric-card">
+          <strong>تصفية سريعة</strong>
+          <span>حسب النوع أو السعر أو الاسم</span>
+        </article>
+        <article class="store-metric-card">
+          <strong>كميات مرنة</strong>
+          <span>تحكم سريع في الكمية</span>
+        </article>
+        <article class="store-metric-card">
+          <strong>عربة جاهزة</strong>
+          <span>التعديلات تُحفظ مباشرة</span>
+        </article>
+      </div>
+    </section>
 
-  <!-- ===== Footer ===== -->
-  <footer>
-    <p>&copy; 2026 One market</p>
+    <section class="products-showcase">
+      <h2 class="section-title">✨ جميع المنتجات</h2>
+      
+      <!-- Integration: listing controls (search / category / sort) -->
+      <div class="products-toolbar" role="region" aria-label="أدوات تصفية المنتجات">
+        <label class="products-search-wrap" for="shopSearchInput">
+          <span class="products-search-icon" aria-hidden="true">🔎</span>
+          <input
+            id="shopSearchInput"
+            class="products-search-input"
+            type="search"
+            placeholder="ابحث عن منتج..."
+            autocomplete="off"
+            aria-label="ابحث عن منتج"
+          >
+        </label>
+
+        <div id="shopCategoryFilters" class="products-filters" role="group" aria-label="تصنيف المنتجات">
+          <button type="button" class="products-filter-btn is-active" data-category="all">الكل</button>
+          <button type="button" class="products-filter-btn" data-category="vegetables">خضار</button>
+          <button type="button" class="products-filter-btn" data-category="fruits">فواكه</button>
+          <button type="button" class="products-filter-btn" data-category="herbs">خضرة</button>
+        </div>
+
+        <label class="products-sort-wrap" for="shopSortSelect">
+          <span>ترتيب:</span>
+          <select id="shopSortSelect" class="products-sort-select" aria-label="ترتيب المنتجات">
+            <option value="popularity">الأكثر شعبية</option>
+            <option value="price_asc">السعر: الأقل أولاً</option>
+            <option value="price_desc">السعر: الأعلى أولاً</option>
+            <option value="name">الاسم (أ-ي)</option>
+          </select>
+        </label>
+      </div>
+
+      <div id="shopProductsGrid" class="products-grid-v2" aria-live="polite"></div>
+      <p id="shopProductsEmpty" class="products-empty" hidden>لا توجد منتجات متاحة حالياً.</p>
+    </section>
+
+    <a id="quickCartBtn" class="quick-cart-btn" href="cart.html" aria-label="اذهب للعربة">
+      <span class="quick-cart-label">اذهب للعربة</span>
+      <span id="quickCartCount" class="quick-cart-count">0</span>
+    </a>
+    <a id="stickyCartFab" class="sticky-cart-fab" href="cart.html" aria-label="العربة">
+      <span class="sticky-cart-fab__icon" aria-hidden="true">🛒</span>
+      <span id="stickyCartCount" class="sticky-cart-fab__count">0</span>
+    </a>
+
+    <a id="whatsappHelp" class="whatsapp-help" href="https://wa.me/201067465207" target="_blank" rel="noopener noreferrer">
+      💬 تواصل مع خدمة العملاء واتساب: 01067465207
+    </a>
+  </div>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <div class="site-footer__brand">
+        <strong>One Market</strong>
+        <p>تجربة شراء أوضح للخضار والفواكه مع توصيل محلي ودعم سريع.</p>
+        <div class="site-footer__chips">
+          <span>الدفع عند الاستلام</span>
+          <span>فودافون كاش</span>
+          <span>دعم واتساب</span>
+        </div>
+      </div>
+      <div class="site-footer__links">
+        <a href="about.html">عن المتجر</a>
+        <a href="faq.html">الأسئلة الشائعة</a>
+        <a href="privacy.html">الخصوصية</a>
+        <a href="terms.html">الشروط</a>
+        <a href="https://wa.me/201067465207" target="_blank" rel="noopener noreferrer">واتساب</a>
+      </div>
+      <div class="site-footer__meta">
+        <p>مناطق التوصيل: الأقصر المدينة، الحبيل، البغدادي، البياضية.</p>
+        <p>ساعات استقبال الطلبات: يومياً من 7:00 صباحاً إلى 3:00 مساءً.</p>
+        <p>&copy; 2026 One Market</p>
+      </div>
+    </div>
   </footer>
 
-  <script src="js/config.js?v=20260218"></script>
-  <script src="js/utils.js?v=20260218"></script>
-  <script src="js/main.js?v=20260218"></script>
+  <script src="js/config.js?v=20260328"></script>
+  <script src="js/utils.js?v=20260328"></script>
+  <script src="js/firebase-config.js?v=20260328"></script>
+  <script src="js/firebase-service.js?v=20260403"></script>
+  <script src="js/firebase-auth.js?v=20260328"></script>
+  <script type="module" src="js/firebase-bridge.js?v=20260328"></script>
+  
+  <script>
+    // Shop page specific product display logic
+    (() => {
+      const PRODUCT_IMAGE_MAP = Object.freeze({
+        bell_pepper: 'filfil.png'
+      });
+
+      const PRODUCT_BADGE_MAP = Object.freeze({
+        strawberry: 'خصم 15%'
+      });
+
+      const quantities = {};
+      let searchDebounceId = null;
+      const viewState = { search: '', category: 'all', sort: 'popularity' };
+      
+      const FRUIT_IDS = new Set([
+        'apple', 'orange', 'mandarin', 'lemon', 'lime', 'grapefruit', 'banana',
+        'grapes', 'mango', 'strawberry', 'watermelon', 'cantaloupe', 'melon',
+        'date', 'fig', 'pear', 'peach', 'apricot', 'plum', 'guava', 'pomegranate',
+        'cherry', 'kiwi', 'pineapple', 'coconut', 'avocado', 'blueberry',
+        'raspberry', 'blackberry'
+      ]);
+      const HERB_UNITS = new Set(['حزمة']);
+
+      function normalizeSearchText(text) {
+        return String(text || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      }
+
+      function getProductCategory(productId, product) {
+        if (FRUIT_IDS.has(productId)) return 'fruits';
+        if (HERB_UNITS.has(product?.unit)) return 'herbs';
+        return 'vegetables';
+      }
+
+      function isActiveCategoryEnabled(categoryId) {
+        const settings = JSON.parse(localStorage.getItem('categorySettings') || '{"vegetables":true,"fruits":true,"herbs":true}');
+        return settings[categoryId] !== false;
+      }
+
+      function getStep(unit) {
+        if (unit === 'كجم') return 0.5;
+        return 1;
+      }
+
+      function normalizeQty(value) {
+        const num = Number(value);
+        if (!Number.isFinite(num) || num <= 0) return 0;
+        return Number(num.toFixed(2));
+      }
+
+      function formatQty(qty, unit) {
+        const formatted = Number.isInteger(qty)
+          ? String(qty)
+          : String(Number(qty.toFixed(2))).replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1');
+        return `${formatted} ${unit}`;
+      }
+
+      function getStoredItems() {
+        const saved = loadPackageFromStorage();
+        if (!saved || !saved.items) return {};
+
+        const parsed = {};
+        Object.entries(saved.items).forEach(([productId, qty]) => {
+          if (!PRODUCTS[productId]) return;
+          const normalized = normalizeQty(qty);
+          if (normalized > 0) parsed[productId] = normalized;
+        });
+        return parsed;
+      }
+
+      function selectedItems() {
+        const items = {};
+        Object.entries(quantities).forEach(([productId, qty]) => {
+          const price = Number(PRODUCTS?.[productId]?.unitPrice);
+          const normalized = normalizeQty(qty);
+          if (normalized > 0 && Number.isFinite(price) && price > 0) {
+            items[productId] = normalized;
+          }
+        });
+        return items;
+      }
+
+      function calculateTotal(items) {
+        return Object.entries(items).reduce((sum, [productId, qty]) => {
+          const price = Number(PRODUCTS?.[productId]?.unitPrice);
+          if (!Number.isFinite(price) || price <= 0) return sum;
+          return sum + (price * qty);
+        }, 0);
+      }
+
+      function updateCartCount() {
+        const countEl = document.getElementById('cartCount');
+        const quickBtn = document.getElementById('quickCartBtn');
+        const quickCountEl = document.getElementById('quickCartCount');
+        const stickyCountEl = document.getElementById('stickyCartCount');
+        const itemsCount = Object.keys(selectedItems()).length;
+
+        if (countEl) countEl.textContent = String(itemsCount);
+        if (quickCountEl) quickCountEl.textContent = String(itemsCount);
+        if (stickyCountEl) stickyCountEl.textContent = String(itemsCount);
+        if (quickBtn) quickBtn.classList.toggle('has-items', itemsCount > 0);
+      }
+
+      function saveCurrentSelection() {
+        const items = selectedItems();
+        if (!Object.keys(items).length) {
+          clearPackageFromStorage();
+          updateCartCount();
+          document.dispatchEvent(new CustomEvent('cart:changed', {
+            detail: { items: {}, total: 0, count: 0 }
+          }));
+          return;
+        }
+
+        const basePackage = PACKAGES?.week || {};
+        const packageData = {
+          id: basePackage.id || 'week',
+          name: 'طلب مخصص',
+          emoji: '🛒',
+          frequency: basePackage.frequency || 'أسبوعي',
+          deliveryDays: Number(basePackage.deliveryDays) || 7,
+          items,
+          price: Number(calculateTotal(items).toFixed(2)),
+          isRecurring: false,
+          createdAt: new Date().toISOString()
+        };
+
+        savePackageToStorage(packageData);
+        updateCartCount();
+        document.dispatchEvent(new CustomEvent('cart:changed', {
+          detail: {
+            items,
+            total: packageData.price,
+            count: Object.keys(items).length
+          }
+        }));
+      }
+
+      function updateCardState(card, qty) {
+        const addBtn = card.querySelector('.product-add-btn');
+        const qtyBar = card.querySelector('.product-qty-bar');
+        const qtyValue = card.querySelector('[data-role="qty-value"]');
+        const unit = card.dataset.unit || 'وحدة';
+
+        if (qtyValue && qty > 0) {
+          qtyValue.textContent = formatQty(qty, unit);
+        } else if (qtyValue) {
+          qtyValue.textContent = formatQty(getStep(unit), unit);
+        }
+
+        if (addBtn && qtyBar) {
+          if (qty > 0) {
+            addBtn.hidden = true;
+            qtyBar.hidden = false;
+            addBtn.classList.add('has-qty');
+          } else {
+            addBtn.hidden = false;
+            qtyBar.hidden = true;
+            addBtn.classList.remove('has-qty');
+          }
+        }
+      }
+
+      function getAvailableProducts() {
+        return Object.entries(PRODUCTS || {})
+          .filter(([, product]) => {
+            const price = Number(product?.unitPrice);
+            return Number.isFinite(price) && price > 0;
+          })
+          .sort(([idA, productA], [idB, productB]) => {
+            return String(productA.name || '').localeCompare(String(productB.name || ''), 'ar');
+          });
+      }
+
+      function getVisibleProducts() {
+        const allProducts = getAvailableProducts();
+        const searchTerm = normalizeSearchText(viewState.search);
+        const category = viewState.category;
+        const sortMode = viewState.sort;
+
+        const filtered = allProducts.filter(([productId, product]) => {
+          const productCategory = getProductCategory(productId, product);
+          if (!isActiveCategoryEnabled(productCategory)) return false;
+          if (category !== 'all' && productCategory !== category) return false;
+          if (!searchTerm) return true;
+          const haystack = normalizeSearchText(`${product.name || ''} ${product.label || ''}`);
+          return haystack.includes(searchTerm);
+        });
+
+        filtered.sort(([idA, productA], [idB, productB]) => {
+          const priceA = Number(productA?.unitPrice) || 0;
+          const priceB = Number(productB?.unitPrice) || 0;
+          if (sortMode === 'price_asc') return priceA - priceB;
+          if (sortMode === 'price_desc') return priceB - priceA;
+          if (sortMode === 'name') return String(productA.name || '').localeCompare(String(productB.name || ''), 'ar');
+          return 0;
+        });
+
+        return filtered;
+      }
+
+      function renderShopProducts() {
+        const grid = document.getElementById('shopProductsGrid');
+        const emptyEl = document.getElementById('shopProductsEmpty');
+        if (!grid) return;
+
+        const available = getVisibleProducts();
+        if (!available.length) {
+          grid.innerHTML = '';
+          if (emptyEl) emptyEl.hidden = false;
+          return;
+        }
+
+        if (emptyEl) emptyEl.hidden = true;
+        grid.innerHTML = available.map(([productId, product]) => {
+          const unit = product.unit || 'وحدة';
+          const price = product.unitPrice || 0;
+          const qty = normalizeQty(quantities[productId] || 0);
+          const imagePath = PRODUCT_IMAGE_MAP[productId];
+          const visual = imagePath
+            ? `<img class="market-product-image" src="${imagePath}" alt="${product.name}" loading="lazy">`
+            : `<span class="market-product-emoji" aria-hidden="true">${product.emoji || '🧺'}</span>`;
+          const badge = PRODUCT_BADGE_MAP[productId]
+            ? `<span class="product-discount-badge">${PRODUCT_BADGE_MAP[productId]}</span>`
+            : '';
+          return `
+            <article class="market-product-card" data-product="${productId}" data-unit="${unit}" data-category="${getProductCategory(productId, product)}">
+              <div class="market-product-media">
+                ${badge}
+                ${visual}
+              </div>
+              <div class="market-product-body">
+                <div class="market-product-header">
+                  <div class="market-product-copy">
+                    <h3 class="market-product-name">${product.name}</h3>
+                    <p class="market-product-meta">${unit}</p>
+                    <a class="market-product-link" href="product.html?id=${productId}">عرض التفاصيل</a>
+                  </div>
+                  <span class="market-product-unit">${unit}</span>
+                </div>
+                <div class="market-product-purchase">
+                  <div class="product-price-row-v2">
+                    <span class="price-major">${Math.floor(price)}</span>
+                    <span class="price-currency">EGP</span>
+                  </div>
+                  <div class="product-qty-control">
+                    <button type="button" class="product-add-btn" data-action="add" data-product="${productId}" aria-label="إضافة ${product.name}">
+                      <span class="add-icon">+</span>
+                      <span class="add-label">أضف</span>
+                    </button>
+                    <div class="product-qty-bar" hidden>
+                      <button type="button" class="qty-minus-btn" data-action="decrease" data-product="${productId}" aria-label="تقليل ${product.name}">-</button>
+                      <span class="qty-value" data-role="qty-value">${formatQty(Math.max(qty, getStep(unit)), unit)}</span>
+                      <button type="button" class="qty-plus-btn" data-action="increase" data-product="${productId}" aria-label="زيادة ${product.name}">+</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </article>
+          `;
+        }).join('');
+
+        grid.querySelectorAll('.market-product-card').forEach(card => {
+          const productId = card.dataset.product;
+          updateCardState(card, normalizeQty(quantities[productId] || 0));
+        });
+
+        if (!grid.dataset.bound) {
+          grid.addEventListener('click', handleProductAction);
+          grid.dataset.bound = 'true';
+        }
+      }
+
+      function handleProductAction(event) {
+        const button = event.target.closest('button[data-action]');
+        if (!button) return;
+
+        const card = button.closest('.market-product-card');
+        if (!card) return;
+
+        const productId = card.dataset.product;
+        if (!productId || !PRODUCTS[productId]) return;
+
+        const unit = card.dataset.unit || PRODUCTS[productId].unit || 'وحدة';
+        const step = getStep(unit);
+        const currentQty = normalizeQty(quantities[productId] || 0);
+        const action = button.dataset.action;
+
+        let nextQty = currentQty;
+        if (action === 'add' || action === 'increase') {
+          nextQty = normalizeQty(action === 'add' ? step : currentQty + step);
+        } else if (action === 'decrease') {
+          nextQty = normalizeQty(currentQty - step);
+        }
+
+        if (nextQty > 0) {
+          quantities[productId] = nextQty;
+        } else {
+          delete quantities[productId];
+        }
+
+        updateCardState(card, nextQty);
+        saveCurrentSelection();
+      }
+
+      function updateCategoryVisibility() {
+        const filtersWrap = document.getElementById('shopCategoryFilters');
+        if (!filtersWrap) return;
+
+        const categoryBtns = filtersWrap.querySelectorAll('button[data-category]');
+        categoryBtns.forEach(btn => {
+          const category = btn.dataset.category;
+          if (category === 'all') {
+            btn.style.display = 'block';
+          } else if (isActiveCategoryEnabled(category)) {
+            btn.style.display = 'block';
+            btn.style.opacity = '1';
+          } else {
+            btn.style.display = 'none';
+          }
+        });
+      }
+
+      function bindShopToolbarEvents() {
+        const searchInput = document.getElementById('shopSearchInput');
+        const sortSelect = document.getElementById('shopSortSelect');
+        const filtersWrap = document.getElementById('shopCategoryFilters');
+
+        if (searchInput && !searchInput.dataset.bound) {
+          searchInput.addEventListener('input', () => {
+            viewState.search = searchInput.value || '';
+            if (searchDebounceId) window.clearTimeout(searchDebounceId);
+            searchDebounceId = window.setTimeout(() => {
+              renderShopProducts();
+            }, 160);
+          });
+          searchInput.dataset.bound = 'true';
+        }
+
+        if (sortSelect && !sortSelect.dataset.bound) {
+          sortSelect.addEventListener('change', () => {
+            viewState.sort = sortSelect.value || 'popularity';
+            renderShopProducts();
+          });
+          sortSelect.dataset.bound = 'true';
+        }
+
+        if (filtersWrap && !filtersWrap.dataset.bound) {
+          filtersWrap.addEventListener('click', (event) => {
+            const btn = event.target.closest('button[data-category]');
+            if (!btn) return;
+            const category = btn.dataset.category || 'all';
+            if (category !== 'all' && !isActiveCategoryEnabled(category)) return;
+            viewState.category = category;
+            filtersWrap.querySelectorAll('.products-filter-btn').forEach(el => {
+              el.classList.toggle('is-active', el === btn);
+            });
+            renderShopProducts();
+          });
+          filtersWrap.dataset.bound = 'true';
+        }
+
+        updateCategoryVisibility();
+      }
+
+      async function initShopPage() {
+        // Load custom products
+        const customProducts = JSON.parse(localStorage.getItem('customProducts') || '{}');
+        Object.assign(PRODUCTS, customProducts);
+        Object.assign(quantities, getStoredItems());
+
+        try {
+          await loadProductPrices();
+        } catch (error) {
+          console.warn('تعذر تحميل الأسعار في صفحة المتجر:', error);
+        }
+
+        bindShopToolbarEvents();
+        renderShopProducts();
+        updateCartCount();
+      }
+
+      document.addEventListener('DOMContentLoaded', initShopPage);
+      document.addEventListener('prices:updated', () => {
+        renderShopProducts();
+        updateCartCount();
+      });
+      document.addEventListener('categories:updated', () => {
+        updateCategoryVisibility();
+        if (viewState.category !== 'all' && !isActiveCategoryEnabled(viewState.category)) {
+          viewState.category = 'all';
+        }
+        renderShopProducts();
+      });
+    })();
+  </script>
 </body>
 </html>
-
-
-
-
-
-
-

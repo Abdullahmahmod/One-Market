@@ -3,16 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="إتمام الطلب في One Market مع بيانات التوصيل والدفع.">
-  <meta name="robots" content="noindex">
+  <meta name="description" content="شروط وأحكام استخدام One Market وإتمام الطلبات.">
   <meta name="theme-color" content="#11b76b">
-  <title>الدفع - One Market</title>
+  <title>الشروط والأحكام - One Market</title>
   <link rel="icon" type="image/svg+xml" href="logo.svg">
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
   <link rel="stylesheet" href="theme.css?v=20260328">
   <link rel="stylesheet" href="responsive.css?v=20260328">
 </head>
@@ -29,7 +24,7 @@
       <a href="index.html">الرئيسية</a>
       <a href="shop.html">المتجر</a>
       <a href="about.html">عن المتجر</a>
-      <a href="checkout.html" class="active">الدفع</a>
+      <a href="checkout.html">الدفع</a>
       <a href="orders.html">طلباتي</a>
       <a href="account.html">حسابي</a>
       <a href="cart.html">العربة</a>
@@ -40,30 +35,34 @@
     </a>
   </header>
 
-  <main class="cart-page">
-    <div class="cart-wrapper">
-      <a class="back-button" href="cart.html">العودة إلى العربة</a>
+  <main class="legal-page">
+    <section class="legal-hero">
+      <span class="store-hero__eyebrow">الشروط والأحكام</span>
+      <h2>شروط مختصرة وواضحة لاستخدام الموقع وإتمام الطلبات.</h2>
+      <p>باستخدام الموقع وإرسال الطلب، فأنت توافق على الشروط التالية بالصياغة المبسطة الحالية.</p>
+    </section>
 
-      <div class="cart-content-wrapper">
-        <div class="package-summary-column">
-          <h2 class="cart-title">ملخص الطلب</h2>
-          <div id="checkoutSummary" class="cart-content">
-            <div class="empty-cart-message">
-              <div class="empty-cart-icon">🛒</div>
-              <div class="empty-cart-text">العربة فارغة</div>
-              <a href="shop.html" class="continue-shopping-btn">ابدأ التسوق</a>
-            </div>
-          </div>
-        </div>
+    <section class="legal-grid">
+      <article class="legal-card">
+        <h3>المنتجات والتوفر</h3>
+        <p>توفر المنتجات والأسعار قد يتغير حسب التحديثات اليومية. ما يظهر في الموقع هو المرجع الحالي عند تجهيز الطلب.</p>
+      </article>
 
-        <div class="order-form-column">
-          <h2 class="form-title-main">الدفع</h2>
-          <div id="checkoutFormWrapper" class="form-wrapper">
-            <p class="form-placeholder">أضف منتجات أولاً.</p>
-          </div>
-        </div>
-      </div>
-    </div>
+      <article class="legal-card">
+        <h3>بيانات الطلب</h3>
+        <p>العميل مسؤول عن إدخال الاسم ورقم الهاتف والعنوان ومنطقة التوصيل بشكل صحيح حتى يتم تنفيذ الطلب بدون تأخير.</p>
+      </article>
+
+      <article class="legal-card">
+        <h3>الدفع</h3>
+        <p>طرق الدفع المتاحة حالياً هي الدفع عند الاستلام وفودافون كاش. عند الدفع الإلكتروني يجب إدخال البيانات المرجعية المطلوبة بشكل صحيح.</p>
+      </article>
+
+      <article class="legal-card">
+        <h3>التوصيل والتواصل</h3>
+        <p>يتم التواصل مع العميل عند الحاجة لتأكيد الطلب أو توضيح أي تفاصيل تخص التوصيل أو التوقيت.</p>
+      </article>
+    </section>
   </main>
 
   <footer class="site-footer">
@@ -92,12 +91,16 @@
     </div>
   </footer>
 
-  <script src="js/config.js?v=20260328"></script>
-  <script src="js/utils.js?v=20260328"></script>
-  <script src="js/firebase-config.js?v=20260328"></script>
-  <script src="js/firebase-service.js?v=20260403"></script>
-  <script src="js/firebase-auth.js?v=20260328"></script>
-  <script type="module" src="js/firebase-bridge.js?v=20260328"></script>
-  <script src="js/main.js?v=20260403"></script>
+  <script>
+    (() => {
+      try {
+        const raw = localStorage.getItem('cartPackage');
+        const parsed = raw ? JSON.parse(raw) : null;
+        const count = Object.keys((parsed && parsed.items) || {}).length;
+        const badge = document.getElementById('cartCount');
+        if (badge) badge.textContent = String(count);
+      } catch (_) {}
+    })();
+  </script>
 </body>
 </html>

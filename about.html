@@ -1,53 +1,287 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>عن المتجر - One market</title>
+  <meta name="description" content="عن One Market: كيف نختار المنتجات، مناطق التوصيل، وطرق الدفع والدعم.">
+  <meta name="keywords" content="عن One Market, توصيل خضار, متجر خضار الأقصر, طرق الدفع">
+  <meta name="theme-color" content="#11b76b">
+  <title>عن المتجر - One Market</title>
   <link rel="icon" type="image/svg+xml" href="logo.svg">
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="theme.css?v=20260218">
-  <link rel="stylesheet" href="main.css?v=20260218">
-  <link rel="stylesheet" href="responsive.css?v=20260218">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="theme.css?v=20260328">
+  <link rel="stylesheet" href="responsive.css?v=20260328">
+  <style>
+    .about-page {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0 20px 30px;
+    }
+
+    .about-shell {
+      display: grid;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .about-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .about-card {
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(17, 183, 107, 0.12);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .about-card h3 {
+      margin: 0 0 10px;
+      font-size: 1.1rem;
+      color: var(--text-dark);
+    }
+
+    .about-card p,
+    .about-card li {
+      color: var(--text-muted);
+      line-height: 1.85;
+    }
+
+    .about-card ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 10px;
+    }
+
+    .about-card li {
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(17, 183, 107, 0.06);
+    }
+
+    .about-highlights {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .about-highlight {
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(17, 183, 107, 0.12);
+      border-radius: 22px;
+      padding: 18px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .about-highlight strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text-dark);
+    }
+
+    .about-highlight span {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+    }
+
+    .about-cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .about-cta-row a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 14px;
+      text-decoration: none;
+      font-weight: 800;
+    }
+
+    .about-cta-row a.primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .about-cta-row a.secondary {
+      background: white;
+      color: var(--primary-dark);
+      border: 1px solid rgba(17, 183, 107, 0.16);
+    }
+
+    @media (max-width: 900px) {
+      .about-grid,
+      .about-highlights {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .about-page {
+        padding: 0 12px 24px;
+      }
+
+      .about-card,
+      .about-highlight {
+        border-radius: 20px;
+        padding: 18px;
+      }
+    }
+  </style>
 </head>
 <body>
-  <!-- ===== Header ===== -->
   <header>
     <div class="site-brand">
-<div class="brand-text">
-        <h1>One market</h1>
-        <p>رمضان كريم</p>
+      <div class="brand-icon">🌱</div>
+      <div class="brand-text">
+        <h1>One Market</h1>
+        <p class="brand-tagline">خضار وفواكه طازة يومياً</p>
       </div>
     </div>
     <nav class="site-nav">
       <a href="index.html">الرئيسية</a>
       <a href="shop.html">المتجر</a>
-      <a href="about.html">عن المتجر</a>
+      <a href="about.html" class="active">عن المتجر</a>
       <a href="checkout.html">الدفع</a>
       <a href="orders.html">طلباتي</a>
-      <a href="cart.html">العربة</a>    </nav>
+      <a href="account.html">حسابي</a>
+      <a href="cart.html">العربة</a>
+    </nav>
+    <a href="cart.html" class="cart-icon-header" aria-label="العربة">
+      <span class="cart-icon">🛒</span>
+      <span class="cart-count" id="cartCount">0</span>
+    </a>
   </header>
 
-  <!-- ===== Main Content ===== -->
-  <main class="page-main">
-    <h2>عن المتجر</h2>
-    <p>مرحباً بك في One market — متجر الخضار الطازج. هنا يمكنك الاطلاع على معلومات المتجر وسياساته.</p>
+  <main class="about-page">
+    <section class="legal-hero">
+      <span class="store-hero__eyebrow">عن المتجر</span>
+      <h2>متجر بسيط وواضح لطلب الخضار والفواكه بدون تعقيد.</h2>
+      <p>
+        نركز على 3 أشياء: وضوح السعر، سرعة الطلب، وتواصل مباشر عند الحاجة. الفكرة أن تختار احتياجك اليومي
+        وتكمل طلبك خلال دقائق من أي جهاز.
+      </p>
+      <div class="about-cta-row">
+        <a class="primary" href="shop.html">ابدأ التسوق</a>
+        <a class="secondary" href="faq.html">الأسئلة الشائعة</a>
+      </div>
+    </section>
+
+    <section class="about-shell">
+      <div class="about-highlights">
+        <article class="about-highlight">
+          <strong>منتجات طازة</strong>
+          <span>تحديث دائم للأسعار والمنتجات المتاحة.</span>
+        </article>
+        <article class="about-highlight">
+          <strong>توصيل محلي</strong>
+          <span>الأقصر المدينة، الحبيل، البغدادي، البياضية.</span>
+        </article>
+        <article class="about-highlight">
+          <strong>دفع مرن</strong>
+          <span>الدفع عند الاستلام أو فودافون كاش.</span>
+        </article>
+        <article class="about-highlight">
+          <strong>دعم سريع</strong>
+          <span>خدمة عملاء عبر واتساب وقت الحاجة.</span>
+        </article>
+      </div>
+
+      <div class="about-grid">
+        <article class="about-card">
+          <h3>كيف نشتغل</h3>
+          <p>
+            صفحة المتجر تعرض المنتجات المتاحة فقط، مع سعر الوحدة بوضوح وإمكانية اختيار الكمية مباشرة.
+            بعد ذلك تنتقل للعربة ثم صفحة الدفع لإدخال بيانات التوصيل وطريقة الدفع المناسبة.
+          </p>
+        </article>
+
+        <article class="about-card">
+          <h3>التوصيل ومواعيد الاستقبال</h3>
+          <ul>
+            <li>نستقبل الطلبات يومياً من 7:00 صباحاً إلى 3:00 مساءً.</li>
+            <li>رسوم التوصيل تُحسب حسب المنطقة داخل صفحة العربة والدفع.</li>
+            <li>المناطق الحالية: الأقصر المدينة، الحبيل، البغدادي، البياضية.</li>
+          </ul>
+        </article>
+
+        <article class="about-card">
+          <h3>ما الذي ستجده الآن في الموقع</h3>
+          <ul>
+            <li>كتالوج منتجات واضح مع بحث وفرز وتصنيفات.</li>
+            <li>سلة محفوظة محلياً على نفس الجهاز حتى تراجع طلبك بسهولة.</li>
+            <li>صفحة "حسابي" لمتابعة الطلبات القديمة والجديدة على أي جهاز، مع استمرار صفحة "طلباتي" للعرض المحلي.</li>
+          </ul>
+        </article>
+
+        <article class="about-card">
+          <h3>الثقة والشفافية</h3>
+          <ul>
+            <li>صفحات توضيحية للخصوصية والشروط والأسئلة الشائعة.</li>
+            <li>روابط تواصل واضحة عبر واتساب مباشرة.</li>
+            <li>عرض صريح لمناطق التوصيل وطرق الدفع المتاحة.</li>
+          </ul>
+        </article>
+      </div>
+
+      <article class="about-card">
+        <h3>تحتاج مساعدة أو لديك طلب خاص؟</h3>
+        <p>
+          إذا كنت تريد كمية خاصة أو عندك استفسار قبل الشراء، تواصل مباشرة عبر واتساب وسنساعدك بسرعة.
+        </p>
+        <div class="about-cta-row">
+          <a class="primary" href="https://wa.me/201067465207" target="_blank" rel="noopener noreferrer">تواصل واتساب</a>
+          <a class="secondary" href="terms.html">الشروط والأحكام</a>
+        </div>
+      </article>
+    </section>
   </main>
 
-  <!-- ===== Footer ===== -->
-  <footer>
-    <p>&copy; 2026 One market</p>
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <div class="site-footer__brand">
+        <strong>One Market</strong>
+        <p>تجربة شراء أوضح للخضار والفواكه مع توصيل محلي ودعم سريع.</p>
+        <div class="site-footer__chips">
+          <span>الدفع عند الاستلام</span>
+          <span>فودافون كاش</span>
+          <span>دعم واتساب</span>
+        </div>
+      </div>
+      <div class="site-footer__links">
+        <a href="about.html">عن المتجر</a>
+        <a href="faq.html">الأسئلة الشائعة</a>
+        <a href="privacy.html">الخصوصية</a>
+        <a href="terms.html">الشروط</a>
+        <a href="https://wa.me/201067465207" target="_blank" rel="noopener noreferrer">واتساب</a>
+      </div>
+      <div class="site-footer__meta">
+        <p>مناطق التوصيل: الأقصر المدينة، الحبيل، البغدادي، البياضية.</p>
+        <p>ساعات استقبال الطلبات: يومياً من 7:00 صباحاً إلى 3:00 مساءً.</p>
+        <p>&copy; 2026 One Market</p>
+      </div>
+    </div>
   </footer>
 
-  <script src="js/config.js?v=20260218"></script>
-  <script src="js/utils.js?v=20260218"></script>
-  <script src="js/main.js?v=20260218"></script>
+  <script>
+    (() => {
+      try {
+        const raw = localStorage.getItem('cartPackage');
+        const parsed = raw ? JSON.parse(raw) : null;
+        const count = Object.keys((parsed && parsed.items) || {}).length;
+        const badge = document.getElementById('cartCount');
+        if (badge) badge.textContent = String(count);
+      } catch (_) {}
+    })();
+  </script>
 </body>
 </html>
-
-
-
-
-
-
-

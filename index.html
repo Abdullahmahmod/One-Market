@@ -3,21 +3,49 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>One market</title>
+  <meta name="description" content="One Market - متجر الخضار والفواكه الطازة. توصيل سريع وآمن مباشرة إلى باب منزلك. جودة عالية وأسعار عادلة.">
+  <meta name="keywords" content="خضار طازة, فواكه, متجر إلكتروني, توصيل, تسوق أونلاين">
+  <meta name="author" content="One Market">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="One Market - متجر الخضار الطازة">
+  <meta property="og:description" content="اشتري الخضار والفواكه الطازة العالية الجودة مباشرة إلى منزلك">
+  <meta property="og:site_name" content="One Market">
+  <meta name="theme-color" content="#11b76b">
+  <title>One Market - متجر الخضار الطازة</title>
   <link rel="icon" type="image/svg+xml" href="logo.svg">
+  
+  <!-- ===== Performance Optimizations ===== -->
+  <!-- Preload critical resources for faster rendering -->
+  <link rel="preload" as="style" href="theme.css?v=20260328">
+  <link rel="preload" as="style" href="responsive.css?v=20260328">
+  <link rel="preload" as="font" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap">
+  
+  <!-- DNS Prefetch + Preconnect to external services -->
+  <link rel="dns-prefetch" href="https://www.gstatic.com">
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  
+  <!-- ===== Stylesheets ===== -->
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <link rel="stylesheet" href="theme.css?v=20260218">
-  <link rel="stylesheet" href="main.css?v=20260218">
-  <link rel="stylesheet" href="responsive.css?v=20260218">
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <link rel="stylesheet" href="theme.css?v=20260328">
+  <link rel="stylesheet" href="responsive.css?v=20260328">
+  <!-- Note: main.css is deprecated (archive only). All active styles in theme.css -->
+  <!-- <link rel="stylesheet" href="main.css?v=20260218"> -->
 </head>
 <body>
   <!-- ===== Header ===== -->
   <header>
     <div class="site-brand">
+      <div class="brand-icon">🌱</div>
       <div class="brand-text">
-        <h1>One market</h1>
-        <p>رمضان كريم</p>
+        <h1>One Market</h1>
+        <p class="brand-tagline">خضار وفواكه طازة يومياً</p>
       </div>
     </div>
     <nav class="site-nav">
@@ -26,6 +54,7 @@
       <a href="about.html">عن المتجر</a>
       <a href="checkout.html">الدفع</a>
       <a href="orders.html">طلباتي</a>
+      <a href="account.html">حسابي</a>
       <a href="cart.html">العربة</a>
     </nav>
     <a href="cart.html" class="cart-icon-header" aria-label="العربة">
@@ -36,6 +65,34 @@
 
   <!-- ===== Main Container ===== -->
   <div class="container">
+    <section class="store-hero" aria-label="مقدمة المتجر">
+      <div class="store-hero__content">
+        <span class="store-hero__eyebrow">توصيل يومي سريع ومنتجات منتقاة بعناية</span>
+        <h2 class="store-hero__title">تجربة شراء أسرع وأوضح لاحتياجاتك اليومية.</h2>
+        <p class="store-hero__text">
+          منتجات طازة، أسعار واضحة، وتجربة مريحة من أول تصفح حتى إتمام الطلب.
+        </p>
+        <div class="store-hero__actions">
+          <a href="shop.html" class="store-hero__cta store-hero__cta--primary">ابدأ التسوق</a>
+          <a href="about.html" class="store-hero__cta store-hero__cta--secondary">تعرف على المتجر</a>
+        </div>
+      </div>
+      <div class="store-hero__stats" aria-label="مميزات المتجر">
+        <article class="store-metric-card">
+          <strong>منتجات طازة</strong>
+          <span>توريد يومي وتجهيز سريع</span>
+        </article>
+        <article class="store-metric-card">
+          <strong>أسعار واضحة</strong>
+          <span>سعر مباشر حسب الوحدة</span>
+        </article>
+        <article class="store-metric-card">
+          <strong>دعم فوري</strong>
+          <span>مساعدة سريعة عبر واتساب</span>
+        </article>
+      </div>
+    </section>
+
     <section class="products-showcase">
       <h2 class="section-title">✨ اختار منتجاتك</h2>
       <!-- Integration: listing controls (search / category / sort) -->
@@ -93,14 +150,15 @@
       <span id="stickyCartCount" class="sticky-cart-fab__count">0</span>
     </a>
 
-    <a class="whatsapp-help" href="https://wa.me/201067465207" target="_blank" rel="noopener" style="display:block;text-align:center;margin:16px auto;padding:10px 14px;background:#25D366;color:#fff;border-radius:12px;max-width:340px;font-weight:700;">
+    <a id="whatsappHelp" class="whatsapp-help" href="https://wa.me/201067465207" target="_blank" rel="noopener noreferrer">
       💬 تواصل مع خدمة العملاء واتساب: 01067465207
     </a>
   </div>
 
   <!-- Scripts in order: config → utils → main -->
-  <script src="js/config.js?v=20260218"></script>
-  <script src="js/utils.js?v=20260218"></script>
+  <script src="js/config.js?v=20260328"></script>
+  <script src="js/utils.js?v=20260328"></script>
+  <script type="module" src="js/firebase-bridge.js?v=20260328"></script>
   <script>
     (() => {
       const PRODUCT_IMAGE_MAP = Object.freeze({
@@ -108,7 +166,7 @@
       });
 
       const PRODUCT_BADGE_MAP = Object.freeze({
-        strawberry: '15% off'
+        strawberry: 'خصم 15%'
       });
 
       const FEATURED_ORDER = Object.freeze([
@@ -346,9 +404,8 @@
         const imagePath = PRODUCT_IMAGE_MAP[productId];
         const visual = imagePath
           ? `<img
-               class="market-product-image lazy-product-image"
-               src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
-               data-src="${imagePath}"
+               class="market-product-image"
+               src="${imagePath}"
                alt="${product.name}"
                loading="lazy"
              >`
@@ -374,21 +431,33 @@
             <div class="market-product-media is-loading">
               ${badge}
               ${visual}
-              <button type="button" class="product-add-btn" data-action="add" data-product="${productId}" aria-label="إضافة ${product.name}">
-                <span class="add-icon" data-role="add-icon">+</span>
-                <span class="add-qty" data-role="add-qty" hidden></span>
-              </button>
+            </div>
+            <div class="market-product-body">
+                <div class="market-product-header">
+                  <div class="market-product-copy">
+                    <h3 class="market-product-name">${product.name}</h3>
+                    <p class="market-product-meta">${getUnitHint(unit)}</p>
+                    <a class="market-product-link" href="product.html?id=${productId}">عرض التفاصيل</a>
+                  </div>
+                  <span class="market-product-unit">${unit}</span>
+                </div>
 
-              <div class="product-qty-bar" hidden>
-                <button type="button" class="qty-clear-btn" data-action="clear" data-product="${productId}" aria-label="حذف ${product.name}">🗑</button>
-                <span class="qty-value" data-role="qty-value">${formatQty(Math.max(qty, getStep(unit)), unit)}</span>
-                <button type="button" class="qty-plus-btn" data-action="increase" data-product="${productId}" aria-label="زيادة ${product.name}">+</button>
+              <div class="market-product-purchase">
+                ${priceHtml}
+                <div class="product-qty-control">
+                  <button type="button" class="product-add-btn" data-action="add" data-product="${productId}" aria-label="إضافة ${product.name}">
+                    <span class="add-icon" data-role="add-icon">+</span>
+                    <span class="add-label" data-role="add-label">أضف</span>
+                  </button>
+
+                  <div class="product-qty-bar" hidden>
+                    <button type="button" class="qty-minus-btn" data-action="decrease" data-product="${productId}" aria-label="تقليل ${product.name}">-</button>
+                    <span class="qty-value" data-role="qty-value">${formatQty(Math.max(qty, getStep(unit)), unit)}</span>
+                    <button type="button" class="qty-plus-btn" data-action="increase" data-product="${productId}" aria-label="زيادة ${product.name}">+</button>
+                  </div>
+                </div>
               </div>
             </div>
-
-            <h3 class="market-product-name">${product.name}</h3>
-            <p class="market-product-meta">${getUnitHint(unit)}</p>
-            ${priceHtml}
           </article>
         `;
       }
@@ -397,9 +466,11 @@
         return Array.from({ length: count }, () => `
           <article class="market-product-card skeleton-card" aria-hidden="true">
             <div class="market-product-media skeleton-block"></div>
-            <div class="skeleton-line skeleton-line-lg"></div>
-            <div class="skeleton-line"></div>
-            <div class="skeleton-line skeleton-line-price"></div>
+            <div class="market-product-body">
+              <div class="skeleton-line skeleton-line-lg"></div>
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line skeleton-line-price"></div>
+            </div>
           </article>
         `).join('');
       }
@@ -417,6 +488,11 @@
         return 'vegetables';
       }
 
+      function isActiveCategoryEnabled(categoryId) {
+        const settings = JSON.parse(localStorage.getItem('categorySettings') || '{"vegetables":true,"fruits":true,"herbs":true}');
+        return settings[categoryId] !== false;
+      }
+
       function getVisibleProducts() {
         const allProducts = getAvailableProducts();
         const searchTerm = normalizeSearchText(viewState.search);
@@ -424,7 +500,17 @@
         const sortMode = viewState.sort;
 
         const filtered = allProducts.filter(([productId, product]) => {
-          if (category !== 'all' && getProductCategory(productId, product) !== category) return false;
+          const productCategory = getProductCategory(productId, product);
+          
+          // Check if current category filter is enabled
+          if (!isActiveCategoryEnabled(productCategory)) {
+            return false;
+          }
+          
+          if (category !== 'all' && productCategory !== category) {
+            return false;
+          }
+          
           if (!searchTerm) return true;
           const haystack = normalizeSearchText(`${product.name || ''} ${product.label || ''}`);
           return haystack.includes(searchTerm);
@@ -471,7 +557,12 @@
           filtersWrap.addEventListener('click', (event) => {
             const btn = event.target.closest('button[data-category]');
             if (!btn) return;
-            viewState.category = btn.dataset.category || 'all';
+            // Only allow clicking on enabled categories or 'all'
+            const category = btn.dataset.category || 'all';
+            if (category !== 'all' && !isActiveCategoryEnabled(category)) {
+              return;
+            }
+            viewState.category = category;
             filtersWrap.querySelectorAll('.products-filter-btn').forEach(el => {
               el.classList.toggle('is-active', el === btn);
             });
@@ -479,6 +570,28 @@
           });
           filtersWrap.dataset.bound = 'true';
         }
+
+        // Show/hide category buttons based on settings
+        updateCategoryVisibility();
+      }
+
+      function updateCategoryVisibility() {
+        const filtersWrap = document.getElementById('productsCategoryFilters');
+        if (!filtersWrap) return;
+
+        const categoryBtns = filtersWrap.querySelectorAll('button[data-category]');
+        categoryBtns.forEach(btn => {
+          const category = btn.dataset.category;
+          if (category === 'all') {
+            btn.style.display = 'block';
+          } else if (isActiveCategoryEnabled(category)) {
+            btn.style.display = 'block';
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+          } else {
+            btn.style.display = 'none';
+          }
+        });
       }
 
       function updateCardState(card, qty) {
@@ -486,34 +599,30 @@
         const addBtn = card.querySelector('.product-add-btn');
         const qtyBar = card.querySelector('.product-qty-bar');
         const qtyValue = card.querySelector('[data-role="qty-value"]');
-        const addQty = card.querySelector('[data-role="add-qty"]');
+        const addIcon = card.querySelector('[data-role="add-icon"]');
+        const addLabel = card.querySelector('[data-role="add-label"]');
         const unit = card.dataset.unit || 'وحدة';
-        const expanded = !!expandedEditors[productId] && qty > 0;
 
-        if (qty <= 0) {
-          setEditorExpanded(productId, false);
+        if (qtyValue && qty > 0) {
+          qtyValue.textContent = formatQty(qty, unit);
+        } else if (qtyValue) {
+          qtyValue.textContent = formatQty(getStep(unit), unit);
         }
 
-        if (expanded) {
-          if (addBtn) addBtn.hidden = true;
-          if (qtyBar) qtyBar.hidden = false;
-          if (qtyValue) qtyValue.textContent = formatQty(qty, unit);
-        } else {
-          if (addBtn) addBtn.hidden = false;
-          if (qtyBar) qtyBar.hidden = true;
-        }
-
-        if (addBtn && addQty) {
+        if (addBtn && qtyBar) {
           if (qty > 0) {
             addBtn.classList.add('has-qty');
-            addQty.hidden = false;
-            addQty.textContent = formatQtyBubble(qty);
+            addBtn.hidden = true;
+            qtyBar.hidden = false;
           } else {
             addBtn.classList.remove('has-qty');
-            addQty.hidden = true;
-            addQty.textContent = '';
+            addBtn.hidden = false;
+            qtyBar.hidden = true;
           }
         }
+
+        if (addIcon) addIcon.textContent = '+';
+        if (addLabel) addLabel.textContent = 'أضف';
       }
 
       function renderProducts() {
@@ -558,27 +667,23 @@
         const productId = card.dataset.product;
         if (!productId || !PRODUCTS[productId]) return;
 
+        const action = button.dataset.action;
+
         const unit = card.dataset.unit || PRODUCTS[productId].unit || 'وحدة';
         const step = getStep(unit);
         const currentQty = normalizeQty(quantities[productId] || 0);
-        const action = button.dataset.action;
-
-        if (action === 'add' && currentQty > 0) {
-          setEditorExpanded(productId, true);
-          updateCardState(card, currentQty);
-          return;
-        }
 
         let nextQty = currentQty;
         if (action === 'add' || action === 'increase') {
           nextQty = normalizeQty(action === 'add' ? step : currentQty + step);
-        } else if (action === 'clear') {
-          nextQty = 0;
+        } else if (action === 'decrease') {
+          nextQty = normalizeQty(currentQty - step);
         }
 
         if (nextQty > 0) {
           quantities[productId] = nextQty;
-          setEditorExpanded(productId, true);
+          delete expandedEditors[productId];
+          clearCollapseTimer(productId);
         } else {
           delete quantities[productId];
           setEditorExpanded(productId, false);
@@ -597,6 +702,11 @@
       }
 
       async function initProductsPage() {
+        // Load custom products from localStorage before rendering
+        const customProducts = JSON.parse(localStorage.getItem('customProducts') || '{}');
+        Object.assign(PRODUCTS, customProducts);
+        console.log('✅ تم تحميل المنتجات المخصصة:', Object.keys(customProducts).length);
+
         bindToolbarEvents();
         const stored = getStoredItems();
         Object.assign(quantities, stored);
@@ -630,10 +740,45 @@
         renderProducts();
         updateCartCount();
       });
+      
+      // Listen for category settings changes from admin panel
+      document.addEventListener('categories:updated', () => {
+        updateCategoryVisibility();
+        if (viewState.category !== 'all' && !isActiveCategoryEnabled(viewState.category)) {
+          viewState.category = 'all';
+        }
+        renderProducts();
+      });
     })();
   </script>
-  <script src="js/main.js?v=20260218"></script>
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <div class="site-footer__brand">
+        <strong>One Market</strong>
+        <p>تجربة شراء أوضح للخضار والفواكه مع توصيل محلي ودعم سريع.</p>
+        <div class="site-footer__chips">
+          <span>الدفع عند الاستلام</span>
+          <span>فودافون كاش</span>
+          <span>دعم واتساب</span>
+        </div>
+      </div>
+      <div class="site-footer__links">
+        <a href="about.html">عن المتجر</a>
+        <a href="faq.html">الأسئلة الشائعة</a>
+        <a href="privacy.html">الخصوصية</a>
+        <a href="terms.html">الشروط</a>
+        <a href="https://wa.me/201067465207" target="_blank" rel="noopener noreferrer">واتساب</a>
+      </div>
+      <div class="site-footer__meta">
+        <p>مناطق التوصيل: الأقصر المدينة، الحبيل، البغدادي، البياضية.</p>
+        <p>ساعات استقبال الطلبات: يومياً من 7:00 صباحاً إلى 3:00 مساءً.</p>
+        <p>&copy; 2026 One Market</p>
+      </div>
+    </div>
+  </footer>
+  <!-- Firebase Configuration -->
+  <script src="js/firebase-config.js?v=20260328"></script>
+  <script src="js/firebase-service.js?v=20260403"></script>
+  <script src="js/firebase-auth.js?v=20260328"></script>
 </body>
 </html>
-
-

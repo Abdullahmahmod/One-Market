@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+  SITEMAP CONFIGURATION
+  =====================
+  ⚠️ IMPORTANT: Replace {{DOMAIN}} with your actual domain (e.g., https://onemarket.example.com)
+  Example: https://your-actual-domain.com/
+  
+  For local/development: Use localhost:port or your local IP
+  For production: Use your actual domain name
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Homepage - Most important, updated frequently -->
+  <url>
+    <loc>{{DOMAIN}}/</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  
+  <!-- Shop page - Updated when products/prices change -->
+  <url>
+    <loc>{{DOMAIN}}/shop.html</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  
+  <!-- About page - Updated occasionally -->
+  <url>
+    <loc>{{DOMAIN}}/about.html</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+  <!-- Cart & Checkout - User-specific, no indexing needed -->
+  <url>
+    <loc>{{DOMAIN}}/cart.html</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>never</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>{{DOMAIN}}/checkout.html</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>never</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <!-- Orders page - User-specific, no indexing needed -->
+  <url>
+    <loc>{{DOMAIN}}/orders.html</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>never</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Account page - User-specific, no indexing needed -->
+  <url>
+    <loc>{{DOMAIN}}/account.html</loc>
+    <lastmod>2026-04-03</lastmod>
+    <changefreq>never</changefreq>
+    <priority>0.6</priority>
+  </url>
+</urlset>

@@ -1,0 +1,23 @@
+# robots.txt for One Market
+# Allow all crawlers except these pages
+
+User-agent: *
+Allow: /
+Allow: /index.html
+Allow: /shop.html
+Allow: /about.html
+Allow: /js/
+Allow: /images/
+Allow: /docs/
+
+# Disallow authenticated pages
+Disallow: /cart.html
+Disallow: /checkout.html
+Disallow: /orders.html
+Disallow: /account.html
+
+# Sitemap location
+Sitemap: https://onemarket.example.com/sitemap.xml
+
+# Crawl delay (optional)
+Crawl-delay: 1

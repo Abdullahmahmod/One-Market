@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="إدارة حسابك في One Market ومتابعة طلباتك القديمة والجديدة من أي جهاز.">
+  <meta name="theme-color" content="#11b76b">
+  <title>حسابي - One Market</title>
+  <link rel="icon" type="image/svg+xml" href="logo.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <link rel="stylesheet" href="theme.css?v=20260403">
+  <link rel="stylesheet" href="responsive.css?v=20260403">
+</head>
+<body>
+  <header>
+    <div class="site-brand">
+      <div class="brand-icon">🌱</div>
+      <div class="brand-text">
+        <h1>One Market</h1>
+        <p class="brand-tagline">خضار وفواكه طازة يومياً</p>
+      </div>
+    </div>
+    <nav class="site-nav">
+      <a href="index.html">الرئيسية</a>
+      <a href="shop.html">المتجر</a>
+      <a href="about.html">عن المتجر</a>
+      <a href="checkout.html">الدفع</a>
+      <a href="orders.html">طلباتي</a>
+      <a href="account.html" class="active">حسابي</a>
+      <a href="cart.html">العربة</a>
+    </nav>
+    <a href="cart.html" class="cart-icon-header" aria-label="العربة">
+      <span class="cart-icon">🛒</span>
+      <span class="cart-count" id="cartCount">0</span>
+    </a>
+  </header>
+
+  <main class="cart-page">
+    <div class="cart-wrapper">
+      <a class="back-button" href="index.html">العودة للرئيسية</a>
+
+      <section id="accountAuthPanel" class="orders-auth-panel">
+        <div id="accountAuthLoggedOut" class="orders-auth-state" hidden>
+          <h2 class="orders-auth-title">تسجيل الدخول أو إنشاء حساب</h2>
+          <p class="cart-helper">تسجيل الدخول اختياري عند الطلب، لكن الحساب بيسهّل متابعة كل طلباتك من أي جهاز.</p>
+          <div class="orders-auth-grid">
+            <div class="form-group">
+              <label for="accountAuthEmail">البريد الإلكتروني</label>
+              <input id="accountAuthEmail" type="email" placeholder="name@example.com" autocomplete="email">
+            </div>
+            <div class="form-group">
+              <label for="accountAuthPassword">كلمة المرور</label>
+              <input id="accountAuthPassword" type="password" placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <div class="form-group">
+              <label for="accountAuthPhone">رقم الهاتف (مهم لربط الطلبات القديمة)</label>
+              <input id="accountAuthPhone" type="tel" placeholder="01012345678" autocomplete="tel">
+            </div>
+          </div>
+          <div class="orders-auth-actions">
+            <button id="accountLoginBtn" type="button" class="submit-button">تسجيل دخول</button>
+            <button id="accountRegisterBtn" type="button" class="secondary-button">إنشاء حساب جديد</button>
+          </div>
+        </div>
+
+        <div id="accountAuthLoggedIn" class="orders-auth-state" hidden>
+          <h2 class="orders-auth-title">أهلاً بك في حسابك</h2>
+          <p class="cart-helper">مسجل دخول بحساب: <b id="accountUserEmail">-</b></p>
+          <p class="cart-helper">نوع الحساب: <span id="accountUserTypeChip" class="account-user-chip registered">عميل مسجل</span></p>
+          <div class="orders-auth-actions">
+            <button id="accountLogoutBtn" type="button" class="secondary-button">تسجيل خروج</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="accountProfilePanel" class="account-profile-panel" hidden>
+        <h2 class="orders-auth-title">بيانات الحساب</h2>
+        <p class="cart-helper">احفظ بياناتك مرة واحدة لتسريع الطلب وربط الطلبات القديمة برقم الموبايل.</p>
+        <form id="accountProfileForm">
+          <div class="account-profile-grid">
+            <div class="form-group">
+              <label for="accountName">الاسم</label>
+              <input id="accountName" type="text" placeholder="محمد أحمد علي" autocomplete="name">
+            </div>
+            <div class="form-group">
+              <label for="accountPhone">رقم الهاتف</label>
+              <input id="accountPhone" type="tel" placeholder="01012345678" autocomplete="tel">
+            </div>
+            <div class="form-group">
+              <label for="accountAddress">عنوان التوصيل</label>
+              <input id="accountAddress" type="text" placeholder="الأقصر - شارع ... - منزل ..." autocomplete="street-address">
+            </div>
+          </div>
+          <div class="account-profile-actions">
+            <button id="accountSaveProfileBtn" type="submit" class="submit-button account-profile-save">حفظ البيانات</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="orders-section">
+        <div class="orders-header">
+          <div>
+            <h2 class="cart-title">📦 طلبات الحساب</h2>
+            <p class="cart-helper"><span id="accountOrdersHint">إجمالي طلبات حسابك:</span> <b id="accountOrdersCount">0</b></p>
+          </div>
+          <button id="accountRefreshOrdersBtn" type="button" class="account-refresh-btn">تحديث الطلبات</button>
+        </div>
+        <div id="accountOrdersList" class="orders-list" aria-live="polite"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <div class="site-footer__brand">
+        <strong>One Market</strong>
+        <p>تجربة شراء أوضح للخضار والفواكه مع توصيل محلي ودعم سريع.</p>
+        <div class="site-footer__chips">
+          <span>الدفع عند الاستلام</span>
+          <span>فودافون كاش</span>
+          <span>دعم واتساب</span>
+        </div>
+      </div>
+      <div class="site-footer__links">
+        <a href="about.html">عن المتجر</a>
+        <a href="faq.html">الأسئلة الشائعة</a>
+        <a href="privacy.html">الخصوصية</a>
+        <a href="terms.html">الشروط</a>
+        <a href="https://wa.me/201067465207" target="_blank" rel="noopener noreferrer">واتساب</a>
+      </div>
+      <div class="site-footer__meta">
+        <p>مناطق التوصيل: الأقصر المدينة، الحبيل، البغدادي، البياضية.</p>
+        <p>ساعات استقبال الطلبات: يومياً من 7:00 صباحاً إلى 3:00 مساءً.</p>
+        <p>&copy; 2026 One Market</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/config.js?v=20260403"></script>
+  <script src="js/utils.js?v=20260403"></script>
+  <script src="js/firebase-config.js?v=20260403"></script>
+  <script src="js/firebase-service.js?v=20260403"></script>
+  <script src="js/firebase-auth.js?v=20260403"></script>
+  <script src="js/firebase-bridge.js?v=20260403"></script>
+  <script src="js/account.js?v=20260403"></script>
+</body>
+</html>

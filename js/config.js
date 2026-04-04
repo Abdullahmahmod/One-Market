@@ -633,7 +633,6 @@ function buildPriceApiUrls() {
     'http://localhost:3000/api/products',
     'http://127.0.0.1:3000/api/products'
   ];
-  const railwayUrl = 'https://one-market-backend-production.up.railway.app/api/products';
   let sameOriginUrl = '';
   let isLocalRuntime = false;
 
@@ -664,9 +663,6 @@ function buildPriceApiUrls() {
       .forEach(u => urls.push(String(u).trim().replace(/\/$/, '')));
   } catch (_) {}
 
-  // Default behavior: production endpoint first.
-  urls.push(railwayUrl);
-
   // Same-origin endpoint stays as optional fallback (useful when frontend + backend share domain).
   if (sameOriginUrl) urls.push(sameOriginUrl);
 
@@ -675,6 +671,7 @@ function buildPriceApiUrls() {
     localUrls.forEach(u => urls.push(u));
   }
 
+  // Note: Railway URL removed - using Firebase as primary source now
   return Array.from(new Set(urls.filter(Boolean)));
 }
 
@@ -1091,8 +1088,75 @@ function loadProductPrices(force = false) {
 
   productPricesPromise = (async () => {
     let lastError = null;
+
+    // ============================================
+    // 1. Try localStorage first (Admin panel saves here)
+    // ============================================
+    try {
+      const stored = localStorage.getItem('productPrices');
+      if (stored) {
+        const prices = JSON.parse(stored);
+        if (Object.keys(prices || {}).length > 0) {
+          console.log('✅ تم تحميل الأسعار من لوحة التحكم (localStorage)');
+          resetAllProductPrices();
+          const applied = applyProductPrices(prices, { source: 'admin-panel' });
+          prunePackagesByPrices(prices, { onlyProvided: true });
+          return {
+            source: 'admin-panel',
+            prices,
+            applied,
+            url: 'storage://productPrices'
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('خطأ في قراءة الأسعار من localStorage:', err.message);
+    }
+
+    // ============================================
+    // 2. Try Firebase if admin prices not found
+    // ============================================
+    const firebaseBridge = typeof window !== 'undefined' ? window.FirebaseBridge : null;
+    if (firebaseBridge && typeof firebaseBridge.isEnabled === 'function' && firebaseBridge.isEnabled()) {
+      try {
+        const firebaseResult = await firebaseBridge.service.getPriceMap();
+        if (firebaseResult?.success && Object.keys(firebaseResult.prices || {}).length) {
+          console.log('✅ تم تحميل الأسعار من Firebase');
+          resetAllProductPrices();
+          const applied = applyProductPrices(firebaseResult.prices, { source: firebaseResult.source || 'firebase' });
+          if (!Object.keys(applied).length) {
+            throw new Error('No matching Firebase product keys found');
+          }
+          prunePackagesByPrices(firebaseResult.prices, { onlyProvided: true });
+          return {
+            source: firebaseResult.source || 'firebase',
+            prices: firebaseResult.prices,
+            applied,
+            url: 'firebase://products'
+          };
+        }
+      } catch (err) {
+        lastError = err;
+        console.warn('تعذر جلب الأسعار من Firebase، سيتم تجربة المسار الاحتياطي.', err.message);
+      }
+    }
+
+    // ============================================
+    // 3. Try external APIs (if configured)
+    // ============================================
     if (!Array.isArray(PRICE_API.URLS) || PRICE_API.URLS.length === 0) {
-      throw new Error('Invalid pricing API URL configuration');
+      console.warn('⚠️ لا توجد sources للأسعار متاحة');
+      // Fall back to default prices from PRODUCTS
+      const defaultPrices = {};
+      Object.entries(PRODUCTS || {}).forEach(([id, product]) => {
+        defaultPrices[id] = product.unitPrice || 0;
+      });
+      return {
+        source: 'defaults',
+        prices: defaultPrices,
+        applied: {},
+        url: 'defaults://products'
+      };
     }
 
     for (const url of PRICE_API.URLS) {
@@ -1102,6 +1166,7 @@ function loadProductPrices(force = false) {
           throw new Error(`No valid product prices found @ ${url}`);
         }
 
+        console.log('✅ تم تحميل الأسعار من API:', url);
         resetAllProductPrices();
         const applied = applyProductPrices(normalized.prices, { source: normalized.source || 'sheet' });
         if (!Object.keys(applied).length) {
@@ -1117,10 +1182,22 @@ function loadProductPrices(force = false) {
       }
     }
 
-    console.error('فشل تحميل الأسعار بعد تجربة كل الروابط', lastError);
-    throw lastError || new Error('تعذر جلب الأسعار');
+    console.warn('فشل تحميل الأسعار من جميع المصادر، استخدام الأسعار الافتراضية');
+    // Fall back to default prices from PRODUCTS
+    const defaultPrices = {};
+    Object.entries(PRODUCTS || {}).forEach(([id, product]) => {
+      defaultPrices[id] = product.unitPrice || 0;
+    });
+    return {
+      source: 'defaults',
+      prices: defaultPrices,
+      applied: {},
+      url: 'defaults://products',
+      error: lastError?.message
+    };
   })().catch(err => {
     productPricesPromise = null;
+    console.error('❌ خطأ في تحميل الأسعار:', err);
     throw err;
   });
 

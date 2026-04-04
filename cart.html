@@ -1,23 +1,28 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>عربة التسوق - One market</title>
+  <meta name="description" content="عربة التسوق في One Market لمراجعة المنتجات قبل إتمام الطلب.">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#11b76b">
+  <title>العربة - One Market</title>
   <link rel="icon" type="image/svg+xml" href="logo.svg">
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <link rel="stylesheet" href="theme.css?v=20260218">
-  <link rel="stylesheet" href="main.css?v=20260218">
-  <link rel="stylesheet" href="responsive.css?v=20260218">
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <link rel="stylesheet" href="theme.css?v=20260328">
+  <link rel="stylesheet" href="responsive.css?v=20260328">
 </head>
 <body>
-  <!-- ===== Header ===== -->
   <header>
     <div class="site-brand">
-<div class="brand-text">
-        <h1>One market</h1>
-        <p>رمضان كريم</p>
+      <div class="brand-icon">🌱</div>
+      <div class="brand-text">
+        <h1>One Market</h1>
+        <p class="brand-tagline">خضار وفواكه طازة يومياً</p>
       </div>
     </div>
     <nav class="site-nav">
@@ -26,33 +31,36 @@
       <a href="about.html">عن المتجر</a>
       <a href="checkout.html">الدفع</a>
       <a href="orders.html">طلباتي</a>
-      <a href="cart.html">العربة</a>    </nav>
+      <a href="account.html">حسابي</a>
+      <a href="cart.html" class="active">العربة</a>
+    </nav>
+    <a href="cart.html" class="cart-icon-header" aria-label="العربة">
+      <span class="cart-icon">🛒</span>
+      <span class="cart-count" id="cartCount">0</span>
+    </a>
   </header>
 
-  <!-- ===== Cart Page Container ===== -->
   <main class="cart-page">
     <div class="cart-wrapper">
-      <button class="back-button" onclick="history.back()">← العودة للشراء</button>
-      
+      <a class="back-button" href="shop.html">العودة إلى المتجر</a>
+
       <div class="cart-content-wrapper">
-        <!-- ===== Left Column: Package Summary ===== -->
         <div class="package-summary-column">
           <h2 class="cart-title">🛒 ملخص الطلب</h2>
           <div id="cartContent" class="cart-content">
             <div class="empty-cart-message">
               <div class="empty-cart-icon">🛒</div>
               <div class="empty-cart-text">العربة فارغة</div>
-              <a href="index.html" class="continue-shopping-btn">ابدأ التسوق</a>
+              <a href="shop.html" class="continue-shopping-btn">ابدأ التسوق</a>
             </div>
           </div>
         </div>
 
-        <!-- ===== Right Column: Checkout CTA ===== -->
         <div class="order-form-column">
-          <h2 class="form-title-main">الدفع</h2>
+          <h2 class="form-title-main">المتابعة</h2>
           <div class="form-section">
-            <p class="cart-helper">راجع طلبك ثم انتقل للدفع.</p>
-            <button id="goToCheckout" class="submit-button" type="button">تابع للدفع</button>
+            <p class="cart-helper">راجع المنتجات ثم اختر منطقة التوصيل وتابع إلى صفحة الدفع.</p>
+            <button id="goToCheckout" class="submit-button" type="button">تابع إلى الدفع</button>
             <p id="checkoutNote" class="cart-note">أضف منتجات أولاً.</p>
           </div>
         </div>
@@ -60,20 +68,38 @@
     </div>
   </main>
 
-  <!-- ===== Footer ===== -->
-  <footer>
-    <p>&copy; 2026 One market - جميع الحقوق محفوظة</p>
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <div class="site-footer__brand">
+        <strong>One Market</strong>
+        <p>تجربة شراء أوضح للخضار والفواكه مع توصيل محلي ودعم سريع.</p>
+        <div class="site-footer__chips">
+          <span>الدفع عند الاستلام</span>
+          <span>فودافون كاش</span>
+          <span>دعم واتساب</span>
+        </div>
+      </div>
+      <div class="site-footer__links">
+        <a href="about.html">عن المتجر</a>
+        <a href="faq.html">الأسئلة الشائعة</a>
+        <a href="privacy.html">الخصوصية</a>
+        <a href="terms.html">الشروط</a>
+        <a href="https://wa.me/201067465207" target="_blank" rel="noopener noreferrer">واتساب</a>
+      </div>
+      <div class="site-footer__meta">
+        <p>مناطق التوصيل: الأقصر المدينة، الحبيل، البغدادي، البياضية.</p>
+        <p>ساعات استقبال الطلبات: يومياً من 7:00 صباحاً إلى 3:00 مساءً.</p>
+        <p>&copy; 2026 One Market</p>
+      </div>
+    </div>
   </footer>
-<!-- Scripts in order: config → utils → main -->
-  <script src="js/config.js?v=20260218"></script>
-  <script src="js/utils.js?v=20260218"></script>
-  <script src="js/main.js?v=20260218"></script>
+
+  <script src="js/config.js?v=20260328"></script>
+  <script src="js/utils.js?v=20260328"></script>
+  <script src="js/firebase-config.js?v=20260328"></script>
+  <script src="js/firebase-service.js?v=20260403"></script>
+  <script src="js/firebase-auth.js?v=20260328"></script>
+  <script type="module" src="js/firebase-bridge.js?v=20260328"></script>
+  <script src="js/main.js?v=20260403"></script>
 </body>
 </html>
-
-
-
-
-
-
-

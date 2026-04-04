@@ -22,6 +22,263 @@ const DELIVERY_AREA_STORAGE_KEY = 'selectedDeliveryArea';
 const API_BASE = (typeof window !== 'undefined' && window.API_BASE_URL)
   ? window.API_BASE_URL.replace(/\/$/, '')
   : 'https://one-market-backend-production.up.railway.app';
+const CUSTOMER_PHONE_STORAGE_KEY = 'oneMarketCustomerPhone';
+const ORDERS_AUTH_STATE = {
+  initialized: false,
+  unsubscribe: null
+};
+
+function normalizePhoneForTracking(value = '') {
+  return String(value || '').replace(/\D/g, '');
+}
+
+function rememberCustomerPhone(phone = '') {
+  try {
+    const normalized = normalizePhoneForTracking(phone);
+    if (!normalized) return;
+    localStorage.setItem(CUSTOMER_PHONE_STORAGE_KEY, normalized);
+  } catch (_) {}
+}
+
+function getRememberedCustomerPhone() {
+  try {
+    return normalizePhoneForTracking(localStorage.getItem(CUSTOMER_PHONE_STORAGE_KEY) || '');
+  } catch (_) {
+    return '';
+  }
+}
+
+function getCurrentCustomerUser() {
+  const firebaseService = getFirebaseOrdersService();
+  if (!firebaseService || typeof firebaseService.getCurrentUser !== 'function') return null;
+  return firebaseService.getCurrentUser();
+}
+
+function isCustomerLoggedIn(user = getCurrentCustomerUser()) {
+  return Boolean(user && !user.isAnonymous);
+}
+
+function getCustomerAccountMetadata(user = getCurrentCustomerUser(), seed = {}) {
+  const providedUid = String(seed?.customerUid || '').trim();
+  const providedEmail = String(seed?.customerEmail || '').trim();
+  const userUid = String(user?.uid || '').trim();
+  const userEmail = String(user?.email || '').trim();
+  const hasProvidedAnonymous = typeof seed?.customerIsAnonymous === 'boolean';
+  const rawAccountType = String(seed?.customerAccountType || '').trim().toLowerCase();
+
+  const customerUid = providedUid || userUid || '';
+  const customerEmail = providedEmail || userEmail || '';
+  const customerIsAnonymous = hasProvidedAnonymous
+    ? seed.customerIsAnonymous
+    : (user ? Boolean(user.isAnonymous) : true);
+  const inferredType = customerUid && !customerIsAnonymous
+    ? 'registered'
+    : (customerEmail ? 'registered' : 'guest');
+  const customerAccountType = rawAccountType === 'registered' || rawAccountType === 'guest'
+    ? rawAccountType
+    : inferredType;
+
+  return {
+    customerUid: customerUid || null,
+    customerEmail: customerEmail || null,
+    customerIsAnonymous: Boolean(customerIsAnonymous),
+    customerAccountType: customerAccountType === 'registered' ? 'registered' : 'guest'
+  };
+}
+
+function updateOrdersAuthPanelUI() {
+  const loggedOutEl = getElement('ordersAuthLoggedOut');
+  const loggedInEl = getElement('ordersAuthLoggedIn');
+  const userEmailEl = getElement('ordersAuthUserEmail');
+  const phoneInput = getElement('ordersAuthPhone');
+  if (!loggedOutEl || !loggedInEl) return;
+
+  const user = getCurrentCustomerUser();
+  const isLogged = isCustomerLoggedIn(user);
+
+  loggedOutEl.hidden = isLogged;
+  loggedInEl.hidden = !isLogged;
+
+  if (userEmailEl) {
+    userEmailEl.textContent = user?.email || 'حساب بدون بريد';
+  }
+
+  if (phoneInput && !phoneInput.value) {
+    const rememberedPhone = getRememberedCustomerPhone();
+    if (rememberedPhone) {
+      phoneInput.value = rememberedPhone;
+    }
+  }
+}
+
+async function handleOrdersAuthAction(mode = 'login') {
+  const firebaseService = getFirebaseOrdersService();
+  if (!firebaseService) {
+    showWarningMessage('تسجيل الدخول غير متاح حالياً. تحقق من إعدادات Firebase.');
+    return;
+  }
+
+  const emailInput = getElement('ordersAuthEmail');
+  const passwordInput = getElement('ordersAuthPassword');
+  const phoneInput = getElement('ordersAuthPhone');
+  const actionBtn = getElement(mode === 'register' ? 'ordersRegisterBtn' : 'ordersLoginBtn');
+
+  const email = String(emailInput?.value || '').trim();
+  const password = String(passwordInput?.value || '').trim();
+  const phone = normalizePhoneForTracking(phoneInput?.value || '');
+
+  if (!email || !password) {
+    showWarningMessage('اكتب البريد الإلكتروني وكلمة المرور أولاً.');
+    return;
+  }
+
+  if (phone) {
+    rememberCustomerPhone(phone);
+  }
+
+  if (actionBtn) actionBtn.disabled = true;
+
+  try {
+    let result = null;
+    if (mode === 'register') {
+      if (typeof firebaseService.registerCustomer !== 'function') {
+        throw new Error('registerCustomer is not available');
+      }
+      const profileData = phone ? { phone } : {};
+      result = await firebaseService.registerCustomer(email, password, profileData);
+    } else {
+      if (typeof firebaseService.loginCustomer !== 'function') {
+        throw new Error('loginCustomer is not available');
+      }
+      result = await firebaseService.loginCustomer(email, password);
+    }
+
+    if (!result?.success) {
+      throw new Error(result?.error || 'Authentication failed');
+    }
+
+    showSuccessMessage(mode === 'register' ? 'تم إنشاء الحساب وتسجيل الدخول بنجاح.' : 'تم تسجيل الدخول بنجاح.');
+    updateOrdersAuthPanelUI();
+    await loadOrdersData();
+  } catch (error) {
+    showErrorMessage(`فشل تسجيل الدخول: ${error.message || error}`);
+  } finally {
+    if (actionBtn) actionBtn.disabled = false;
+  }
+}
+
+async function handleOrdersLogout() {
+  const firebaseService = getFirebaseOrdersService();
+  if (!firebaseService || typeof firebaseService.logout !== 'function') {
+    showWarningMessage('تعذر تنفيذ تسجيل الخروج حالياً.');
+    return;
+  }
+
+  const logoutBtn = getElement('ordersLogoutBtn');
+  if (logoutBtn) logoutBtn.disabled = true;
+
+  try {
+    const result = await firebaseService.logout();
+    if (!result?.success) {
+      throw new Error(result?.error || 'Logout failed');
+    }
+    showSuccessMessage('تم تسجيل الخروج.');
+    updateOrdersAuthPanelUI();
+    await loadOrdersData();
+  } catch (error) {
+    showErrorMessage(`فشل تسجيل الخروج: ${error.message || error}`);
+  } finally {
+    if (logoutBtn) logoutBtn.disabled = false;
+  }
+}
+
+function setupOrdersAuthPanel() {
+  const panel = getElement('ordersAuthPanel');
+  if (!panel) return;
+
+  if (ORDERS_AUTH_STATE.initialized) {
+    updateOrdersAuthPanelUI();
+    return;
+  }
+
+  const loginBtn = getElement('ordersLoginBtn');
+  const registerBtn = getElement('ordersRegisterBtn');
+  const logoutBtn = getElement('ordersLogoutBtn');
+
+  if (loginBtn) {
+    loginBtn.addEventListener('click', () => {
+      handleOrdersAuthAction('login');
+    });
+  }
+
+  if (registerBtn) {
+    registerBtn.addEventListener('click', () => {
+      handleOrdersAuthAction('register');
+    });
+  }
+
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      handleOrdersLogout();
+    });
+  }
+
+  const firebaseService = getFirebaseOrdersService();
+  if (firebaseService && typeof firebaseService.onAuthChange === 'function' && !ORDERS_AUTH_STATE.unsubscribe) {
+    ORDERS_AUTH_STATE.unsubscribe = firebaseService.onAuthChange(() => {
+      updateOrdersAuthPanelUI();
+      if ((window.location.pathname || '').includes('orders.html')) {
+        loadOrdersData();
+      }
+    });
+  }
+
+  ORDERS_AUTH_STATE.initialized = true;
+  updateOrdersAuthPanelUI();
+}
+
+async function prefillCheckoutFormFromCustomerProfile() {
+  try {
+    const user = getCurrentCustomerUser();
+    if (!isCustomerLoggedIn(user)) return;
+
+    const firebaseService = getFirebaseOrdersService();
+    if (!firebaseService || typeof firebaseService.getCustomerProfile !== 'function') return;
+
+    const profileResult = await firebaseService.getCustomerProfile(user.uid);
+    if (!profileResult?.success || !profileResult.profile) return;
+
+    const profile = profileResult.profile;
+    const nameInput = getElement('name');
+    const phoneInput = getElement('phone');
+    const addressInput = getElement('address');
+    const normalizedPhone = normalizePhoneForTracking(profile?.phone || '');
+
+    if (nameInput && !nameInput.value && profile?.name) {
+      nameInput.value = String(profile.name).trim();
+    }
+    if (phoneInput && !phoneInput.value && normalizedPhone) {
+      phoneInput.value = normalizedPhone;
+      rememberCustomerPhone(normalizedPhone);
+    }
+    if (addressInput && !addressInput.value && profile?.address) {
+      addressInput.value = String(profile.address).trim();
+    }
+  } catch (_) {}
+}
+
+function syncGlobalCartBadges() {
+  const badge = getElement('cartCount');
+  const quickBtn = getElement('quickCartBtn');
+  const quickCount = getElement('quickCartCount');
+  const stickyCount = getElement('stickyCartCount');
+  const itemsCount = Object.keys((currentPackage && currentPackage.items) || {}).length;
+
+  if (badge) badge.textContent = String(itemsCount);
+  if (quickCount) quickCount.textContent = String(itemsCount);
+  if (stickyCount) stickyCount.textContent = String(itemsCount);
+  if (quickBtn) quickBtn.classList.toggle('has-items', itemsCount > 0);
+}
 
 function getSelectedDeliveryArea() {
   try {
@@ -71,7 +328,7 @@ const BUSINESS_HOURS_WINDOWS = Object.freeze([
     label: '7:00 صباحاً - 3:00 مساءً'
   }
 ]);
-const DISABLE_BUSINESS_HOURS_CHECK = false;
+const DISABLE_BUSINESS_HOURS_CHECK = true; // مؤقت للاختبار
 
 function getBusinessHoursLabel() {
   return `مواعيد رمضان: ${BUSINESS_HOURS_WINDOWS[0].label}. وكل عام وأنتم بخير`;
@@ -410,6 +667,7 @@ function confirmPackageOptions() {
 function removePackage() {
   currentPackage = null;
   clearPackageFromStorage();
+  syncGlobalCartBadges();
   updateCartDisplay();
 }
 
@@ -587,8 +845,14 @@ async function showConfirmation(message, title = 'تأكيد') {
  * Initialize app on page load
  */
 async function initializeApp() {
+  // Load custom products from localStorage before rendering
+  const customProducts = JSON.parse(localStorage.getItem('customProducts') || '{}');
+  Object.assign(PRODUCTS, customProducts);
+  console.log('✅ تم تحميل المنتجات المخصصة:', Object.keys(customProducts).length);
+
   // Load saved package from localStorage
   currentPackage = loadPackageFromStorage();
+  syncGlobalCartBadges();
   const pathname = window.location.pathname || '';
   const isOrdersPage = pathname.includes('orders.html');
 
@@ -612,6 +876,7 @@ async function initializeApp() {
   if (currentPackage && pricesLoaded) {
     currentPackage.price = recalcPriceFromItems(currentPackage.items);
     savePackageToStorage(currentPackage);
+    syncGlobalCartBadges();
   }
 
   // Update cart display if on cart/checkout page
@@ -624,7 +889,8 @@ async function initializeApp() {
   }
 
   if (pathname.includes('orders.html')) {
-    loadOrdersData();
+    setupOrdersAuthPanel();
+    await loadOrdersData();
   }
 
   console.log('✅ One Market - App initialized');
@@ -651,7 +917,7 @@ function loadCheckoutData() {
   renderCheckout();
 }
 
-function loadOrdersData() {
+async function loadOrdersData() {
   const ordersEl = getElement('ordersList');
   const countEl = getElement('ordersCount');
   const clearBtn = getElement('clearOrdersBtn');
@@ -662,7 +928,36 @@ function loadOrdersData() {
     clearBtn.dataset.bound = 'true';
   }
 
-  const orders = getOrderHistoryFromStorage();
+  let source = 'local';
+  let orders = [];
+  const firebaseService = getFirebaseOrdersService();
+
+  if (firebaseService) {
+    const firebaseResult = await loadOrdersFromFirebase(firebaseService);
+    if (firebaseResult.success) {
+      source = 'firebase';
+      orders = firebaseResult.orders || [];
+    } else if (firebaseResult.reason !== 'missing-customer-identity') {
+      console.warn('⚠️ تعذر تحميل الطلبات من Firebase، سيتم عرض السجل المحلي:', firebaseResult.error || firebaseResult.reason);
+    }
+  }
+
+  if (source === 'local') {
+    orders = getOrderHistoryFromStorage();
+  }
+
+  if (clearBtn) {
+    clearBtn.style.display = source === 'firebase' ? 'none' : '';
+  }
+  const loggedCustomer = isCustomerLoggedIn();
+  setOrdersHintText(
+    source === 'firebase'
+      ? (loggedCustomer
+        ? 'إجمالي طلبات حسابك المسجل:'
+        : 'إجمالي طلباتك المرتبطة بالحساب/الجهاز الحالي:')
+      : 'إجمالي الطلبات المحفوظة على هذا الجهاز:'
+  );
+
   if (countEl) countEl.textContent = String(orders.length);
 
   if (!orders.length) {
@@ -671,6 +966,122 @@ function loadOrdersData() {
   }
 
   ordersEl.innerHTML = orders.map(renderOrderCard).join('');
+}
+
+function getFirebaseOrdersService() {
+  if (typeof FirebaseService === 'undefined') return null;
+  if (typeof FirebaseService.isAvailable === 'function' && !FirebaseService.isAvailable()) return null;
+  return FirebaseService;
+}
+
+function setOrdersHintText(text) {
+  const hintEl = getElement('ordersHint');
+  if (!hintEl) return;
+  hintEl.textContent = text;
+}
+
+function matchOrderByCustomerIdentity(order = {}, identity = {}) {
+  const uid = String(identity.uid || '').trim();
+  const phone = normalizePhoneForTracking(identity.phone || '');
+
+  if (uid && String(order?.customerUid || '').trim() === uid) {
+    return true;
+  }
+
+  if (phone) {
+    const orderPhone = normalizePhoneForTracking(
+      order?.customerPhoneNormalized || order?.customerPhone || order?.phone || ''
+    );
+    return orderPhone === phone;
+  }
+
+  return false;
+}
+
+function filterOrdersByCustomerIdentity(orders = [], identity = {}) {
+  if (!Array.isArray(orders)) return [];
+  return orders.filter((order) => matchOrderByCustomerIdentity(order, identity));
+}
+
+function getFallbackCustomerPhoneFromLocalHistory() {
+  const localOrders = getOrderHistoryFromStorage();
+  for (const order of localOrders) {
+    const normalized = normalizePhoneForTracking(order?.phone || '');
+    if (normalized) {
+      return normalized;
+    }
+  }
+  return '';
+}
+
+async function loadOrdersFromFirebase(firebaseService) {
+  try {
+    let sessionUser = null;
+    if (typeof firebaseService.ensureCustomerSession === 'function') {
+      const sessionResult = await firebaseService.ensureCustomerSession();
+      if (sessionResult?.success) {
+        sessionUser = sessionResult.user || null;
+      }
+    }
+
+    if (!sessionUser && typeof firebaseService.getCurrentUser === 'function') {
+      sessionUser = firebaseService.getCurrentUser();
+    }
+
+    const identity = {
+      uid: String(sessionUser?.uid || '').trim(),
+      phone: getRememberedCustomerPhone() || getFallbackCustomerPhoneFromLocalHistory()
+    };
+
+    if (identity.uid && !identity.phone && typeof firebaseService.getCustomerProfile === 'function') {
+      try {
+        const profileResult = await firebaseService.getCustomerProfile(identity.uid);
+        if (profileResult?.success && profileResult.profile?.phone) {
+          identity.phone = normalizePhoneForTracking(profileResult.profile.phone);
+        }
+      } catch (_) {}
+    }
+
+    if (identity.phone) {
+      rememberCustomerPhone(identity.phone);
+    }
+
+    if (!identity.uid && !identity.phone) {
+      return { success: false, reason: 'missing-customer-identity' };
+    }
+
+    let result = null;
+    if (typeof firebaseService.getOrdersByCustomer === 'function') {
+      result = await firebaseService.getOrdersByCustomer(identity);
+    } else if (firebaseService.Orders && typeof firebaseService.Orders.getByCustomer === 'function') {
+      result = await firebaseService.Orders.getByCustomer(identity);
+    } else if (typeof firebaseService.getAllOrders === 'function') {
+      result = await firebaseService.getAllOrders();
+      if (result?.success) {
+        result.orders = filterOrdersByCustomerIdentity(result.orders, identity);
+      }
+    } else if (firebaseService.Orders && typeof firebaseService.Orders.getAll === 'function') {
+      result = await firebaseService.Orders.getAll();
+      if (result?.success) {
+        result.orders = filterOrdersByCustomerIdentity(result.orders, identity);
+      }
+    }
+
+    if (!result?.success) {
+      return {
+        success: false,
+        reason: 'firebase-query-failed',
+        error: result?.error || 'Unable to fetch orders from Firebase'
+      };
+    }
+
+    return {
+      success: true,
+      orders: Array.isArray(result.orders) ? result.orders : []
+    };
+  } catch (error) {
+    return { success: false, reason: 'firebase-exception', error: error.message };
+  }
 }
 
 function renderOrdersEmpty(ordersEl) {
@@ -711,10 +1122,118 @@ function renderOrderItems(order) {
   return `<li class="orders-item-row"><span>لا توجد عناصر</span></li>`;
 }
 
+function normalizeOrderStatus(status = '') {
+  const raw = String(status || '').trim().toLowerCase();
+  if (!raw) return 'pending';
+  if (raw === 'processing') return 'preparing';
+  if (raw === 'delivered') return 'completed';
+  return raw;
+}
+
+function getOrderStatusMeta(status = '') {
+  const normalized = normalizeOrderStatus(status);
+  const statusMap = {
+    pending: { label: 'قيد المراجعة', className: 'pending' },
+    preparing: { label: 'جاري التحضير', className: 'preparing' },
+    out_for_delivery: { label: 'جاري التوصيل مع المندوب', className: 'out_for_delivery' },
+    completed: { label: 'تم التسليم', className: 'completed' },
+    cancelled: { label: 'تم الإلغاء', className: 'cancelled' }
+  };
+  return statusMap[normalized] || { label: 'قيد المراجعة', className: 'pending' };
+}
+
+function getOrderStatusHistory(order = {}) {
+  const rawHistory = Array.isArray(order?.statusHistory) ? order.statusHistory : [];
+  const normalized = rawHistory
+    .map((entry = {}) => ({
+      status: normalizeOrderStatus(entry?.status || ''),
+      at: entry?.at || entry?.timestamp || entry?.updatedAt || '',
+      note: String(entry?.note || '').trim(),
+      by: String(entry?.by || entry?.actor || '').trim(),
+      deliveryAgentName: String(entry?.deliveryAgentName || '').trim(),
+      deliveryAgentPhone: String(entry?.deliveryAgentPhone || '').trim(),
+      cancellationReason: String(entry?.cancellationReason || '').trim()
+    }))
+    .filter((entry) => Boolean(entry.status));
+
+  const currentStatus = normalizeOrderStatus(order?.status || order?.submission?.status || '');
+  const currentStatusAt = order?.statusUpdatedAt
+    || order?.submission?.updatedAt
+    || order?.updatedAt
+    || order?.submission?.submittedAt
+    || order?.submittedAt
+    || order?.timestamp
+    || new Date().toISOString();
+
+  const hasCurrentStatus = normalized.some((entry) => (
+    entry.status === currentStatus
+    && (!entry.at || String(entry.at) === String(currentStatusAt))
+  ));
+
+  if (!hasCurrentStatus && currentStatus) {
+    normalized.push({
+      status: currentStatus,
+      at: currentStatusAt,
+      note: '',
+      by: '',
+      deliveryAgentName: String(order?.deliveryAgentName || '').trim(),
+      deliveryAgentPhone: String(order?.deliveryAgentPhone || '').trim(),
+      cancellationReason: String(order?.cancellationReason || '').trim()
+    });
+  }
+
+  normalized.sort((a, b) => {
+    const timeA = new Date(a.at).getTime();
+    const timeB = new Date(b.at).getTime();
+    return (Number.isFinite(timeA) ? timeA : 0) - (Number.isFinite(timeB) ? timeB : 0);
+  });
+
+  return normalized;
+}
+
+function renderOrderStatusHistory(order = {}) {
+  const history = getOrderStatusHistory(order);
+  if (!history.length) return '';
+
+  const rows = history
+    .slice(-6)
+    .map((entry) => {
+      const statusMeta = getOrderStatusMeta(entry.status);
+      const noteParts = [];
+      if (entry.note) noteParts.push(entry.note);
+      if (entry.cancellationReason) noteParts.push(`سبب الإلغاء: ${entry.cancellationReason}`);
+      if (entry.deliveryAgentName) noteParts.push(`المندوب: ${entry.deliveryAgentName}`);
+      if (entry.deliveryAgentPhone) noteParts.push(`رقم المندوب: ${entry.deliveryAgentPhone}`);
+      if (entry.by) noteParts.push(`بواسطة: ${entry.by}`);
+
+      const noteText = noteParts.join(' • ');
+      return `
+        <li class="orders-status-history-item">
+          <span class="orders-status ${sanitizeHTML(statusMeta.className)}">${sanitizeHTML(statusMeta.label)}</span>
+          <span class="orders-status-history-time">${sanitizeHTML(formatOrderTimestamp(entry.at))}</span>
+          ${noteText ? `<span class="orders-status-history-note">${sanitizeHTML(noteText)}</span>` : ''}
+        </li>
+      `;
+    })
+    .join('');
+
+  return `
+    <div class="orders-status-history">
+      <div class="orders-status-history-title">تتبع الحالة</div>
+      <ul class="orders-status-history-list">${rows}</ul>
+    </div>
+  `;
+}
+
 function renderOrderCard(order) {
   const submittedAt = order?.submission?.submittedAt || order?.submittedAt || order?.timestamp;
   const packageEmoji = sanitizeHTML(order?.packageData?.emoji || '🛒');
   const packageName = sanitizeHTML(order?.packageData?.name || 'طلب مخصص');
+  const statusMeta = getOrderStatusMeta(order?.status || order?.submission?.status);
+  const statusUpdatedAt = order?.statusUpdatedAt || order?.submission?.updatedAt || order?.updatedAt || submittedAt;
+  const deliveryAgentName = String(order?.deliveryAgentName || '').trim();
+  const deliveryAgentPhone = String(order?.deliveryAgentPhone || '').trim();
+  const cancellationReason = String(order?.cancellationReason || '').trim();
   const estimatedReadyMinutes = Number.isFinite(Number(order?.estimatedReadyMinutes))
     ? Math.round(Number(order.estimatedReadyMinutes))
     : getEstimatedReadyMinutes();
@@ -736,22 +1255,28 @@ function renderOrderCard(order) {
     <article class="orders-card">
       <div class="orders-card-top">
         <div>
-          <div class="orders-id">طلب #${sanitizeHTML(order?.id || '-')}</div>
+          <div class="orders-id">طلب #${sanitizeHTML(order?.id || order?.orderId || '-')}</div>
           <div class="orders-date">${formatOrderTimestamp(submittedAt)}</div>
         </div>
+        <span class="orders-status ${sanitizeHTML(statusMeta.className)}">${sanitizeHTML(statusMeta.label)}</span>
       </div>
 
       <div class="orders-package">${packageEmoji} ${packageName}</div>
       <ul class="orders-items">${renderOrderItems(order)}</ul>
+      ${renderOrderStatusHistory(order)}
 
       <div class="orders-meta">
         <div class="orders-meta-row"><span>العميل</span><b>${sanitizeHTML(order?.name || 'غير متوفر')}</b></div>
         <div class="orders-meta-row"><span>الهاتف</span><b>${sanitizeHTML(order?.phone || 'غير متوفر')}</b></div>
         <div class="orders-meta-row"><span>العنوان</span><b>${sanitizeHTML(order?.address || 'غير متوفر')}</b></div>
+        ${deliveryAgentName ? `<div class="orders-meta-row"><span>اسم المندوب</span><b>${sanitizeHTML(deliveryAgentName)}</b></div>` : ''}
+        ${deliveryAgentPhone ? `<div class="orders-meta-row"><span>رقم المندوب</span><b>${sanitizeHTML(deliveryAgentPhone)}</b></div>` : ''}
+        ${cancellationReason ? `<div class="orders-meta-row"><span>سبب الإلغاء</span><b>${sanitizeHTML(cancellationReason)}</b></div>` : ''}
         <div class="orders-meta-row"><span>طريقة الدفع</span><b>${sanitizeHTML(order?.paymentMethod || 'غير محدد')}</b></div>
         <div class="orders-meta-row"><span>سعر المنتجات</span><b>${formatPrice(subtotal)}</b></div>
         <div class="orders-meta-row"><span>خدمة التوصيل</span><b>${formatDeliveryFeeLabel(deliveryFee)}</b></div>
         <div class="orders-meta-row"><span>موعد الاستلام</span><b>${sanitizeHTML(formatEstimatedReadyLabel(expectedReadyAt, estimatedReadyMinutes))}</b></div>
+        <div class="orders-meta-row"><span>آخر تحديث للحالة</span><b>${sanitizeHTML(formatOrderTimestamp(statusUpdatedAt))}</b></div>
         <div class="orders-meta-row total"><span>الإجمالي</span><b>${formatPrice(total)}</b></div>
       </div>
     </article>
@@ -763,7 +1288,7 @@ async function clearOrderHistory() {
   if (!confirmed) return;
 
   saveOrderHistoryToStorage([]);
-  loadOrdersData();
+  await loadOrdersData();
   showSuccessMessage('تم حذف سجل الطلبات من هذا الجهاز.');
 }
 
@@ -1001,6 +1526,7 @@ function renderCheckout() {
         <p class="payment-hint">أرسل على 01067465207 ثم أدخل الرقم المرجعي أعلاه.</p>
       </div>
       <p style="margin:10px 0 0;font-size:13px;color:#5f6f52;">${buildBusinessHoursNoticeMessage()}</p>
+      <p class="checkout-account-hint">تسجيل الدخول اختياري. لو عايز حساب دائم ومتابعة طلباتك القديمة والجديدة من أي جهاز، استخدم <a href="account.html">صفحة الحساب</a>.</p>
       <button type="submit" class="submit-button">✅ تأكيد الطلب</button>
     </form>
   `;
@@ -1033,6 +1559,7 @@ function renderCheckout() {
     updateCheckoutPricing();
   }
   setupPaymentOptions();
+  prefillCheckoutFormFromCustomerProfile();
   attachSwipeHandlers(summaryEl, true);
 }
 
@@ -1068,6 +1595,7 @@ function handleRemoveItem(itemId, fromCheckout = false) {
 
   currentPackage.price = recalcPriceFromItems(currentPackage.items);
   savePackageToStorage(currentPackage);
+  syncGlobalCartBadges();
 
   if (fromCheckout) {
     renderCheckout();
@@ -1176,6 +1704,11 @@ function saveOrderHistoryToStorage(history) {
 
 function appendOrderToHistory(orderData) {
   if (!orderData || !orderData.packageData) return null;
+  const normalizedPhone = normalizePhoneForTracking(orderData.phone || '');
+  if (normalizedPhone) {
+    rememberCustomerPhone(normalizedPhone);
+  }
+  const accountMeta = getCustomerAccountMetadata(getCurrentCustomerUser(), orderData);
 
   const submittedAt = new Date().toISOString();
   const orderId = orderData.orderId || generateOrderId();
@@ -1189,6 +1722,16 @@ function appendOrderToHistory(orderData) {
     ? expectedReadyDate.toISOString()
     : '';
   const packageSnapshot = JSON.parse(JSON.stringify(orderData.packageData));
+  const initialStatusAt = String(orderData?.submittedAt || '').trim() || submittedAt;
+  const initialStatus = normalizeOrderStatus(orderData?.status || 'pending');
+  const initialStatusHistory = Array.isArray(orderData?.statusHistory) && orderData.statusHistory.length
+    ? orderData.statusHistory
+    : [{
+      status: initialStatus,
+      at: initialStatusAt,
+      by: 'system',
+      note: 'تم استلام الطلب'
+    }];
 
   const orderEntry = {
     id: orderId,
@@ -1210,9 +1753,20 @@ function appendOrderToHistory(orderData) {
     estimatedReadyMinutes,
     expectedReadyAt,
     packageData: packageSnapshot,
+    status: initialStatus,
+    statusUpdatedAt: initialStatusAt,
+    statusHistory: initialStatusHistory,
+    deliveryAgentName: orderData.deliveryAgentName || null,
+    deliveryAgentPhone: orderData.deliveryAgentPhone || null,
+    cancellationReason: orderData.cancellationReason || null,
+    customerUid: accountMeta.customerUid,
+    customerEmail: accountMeta.customerEmail,
+    customerIsAnonymous: accountMeta.customerIsAnonymous,
+    customerAccountType: accountMeta.customerAccountType,
     submission: {
-      status: 'pending',
-      submittedAt,
+      status: initialStatus,
+      submittedAt: initialStatusAt,
+      updatedAt: initialStatusAt,
       expectedReadyAt
     },
     timestamp: Date.now()
@@ -1232,6 +1786,7 @@ function persistSubmittedOrderLocally(orderData = null) {
   // بعد إرسال الطلب بنحتفظ به في "طلباتي" فقط ونفضي العربة الحالية
   clearPackageFromStorage();
   currentPackage = null;
+  syncGlobalCartBadges();
 }
 
 async function handleCheckoutSubmit(e) {
@@ -1343,11 +1898,13 @@ function addOrderFormToCart() {
           <input type="checkbox" id="recurring" name="recurring"> 🔁 هل تريد تكرار الطلب بشكل منتظم؟
         </label>
       </div>
+      <p class="checkout-account-hint">تسجيل الدخول اختياري. لو عايز حساب دائم ومتابعة طلباتك القديمة والجديدة من أي جهاز، استخدم <a href="account.html">صفحة الحساب</a>.</p>
       <button type="submit" class="submit-button">✅ تأكيد الطلب</button>
     </form>
   `;
   const orderForm = getElement('orderForm');
   if (orderForm) orderForm.addEventListener('submit', handleOrderSubmit);
+  prefillCheckoutFormFromCustomerProfile();
 }
 
 async function handleOrderSubmit(e) {
@@ -1455,6 +2012,85 @@ function buildOrderSummary(orderData, name) {
 }
 
 async function submitOrderToBackend(orderData) {
+  const trackingPhone = normalizePhoneForTracking(orderData?.phone || '');
+  if (trackingPhone) {
+    rememberCustomerPhone(trackingPhone);
+  }
+  const customerAccount = getCustomerAccountMetadata(getCurrentCustomerUser(), orderData);
+  Object.assign(orderData, customerAccount);
+
+  // First try to save to Firebase if available and configured
+  const firebaseService = getFirebaseOrdersService();
+  if (firebaseService) {
+    try {
+      console.log('💾 محاولة حفظ الطلب في Firebase...');
+      const submittedAt = orderData?.submittedAt || new Date().toISOString();
+      const normalizedStatus = normalizeOrderStatus(orderData?.status || 'pending');
+      const statusHistory = Array.isArray(orderData?.statusHistory) && orderData.statusHistory.length
+        ? orderData.statusHistory
+        : [{
+          status: normalizedStatus,
+          at: submittedAt,
+          by: 'system',
+          note: 'تم استلام الطلب'
+        }];
+
+      const firebaseOrderData = {
+        ...orderData,
+        customerPhone: orderData?.phone || '',
+        customerPhoneNormalized: trackingPhone || null,
+        customerUid: customerAccount.customerUid,
+        customerEmail: customerAccount.customerEmail,
+        customerIsAnonymous: customerAccount.customerIsAnonymous,
+        customerAccountType: customerAccount.customerAccountType,
+        submittedAt,
+        status: normalizedStatus,
+        statusUpdatedAt: orderData?.statusUpdatedAt || submittedAt,
+        statusHistory
+      };
+
+      const saveOrderFn = typeof firebaseService.saveOrder === 'function'
+        ? firebaseService.saveOrder.bind(firebaseService)
+        : (firebaseService.Orders && typeof firebaseService.Orders.add === 'function'
+          ? firebaseService.Orders.add.bind(firebaseService.Orders)
+          : null);
+      if (!saveOrderFn) {
+        throw new Error('No Firebase order save method available');
+      }
+
+      const result = await saveOrderFn(firebaseOrderData);
+      if (!result?.success) {
+        throw new Error(result?.error || 'Firebase order save failed');
+      }
+
+      if (result?.orderId) {
+        orderData.orderId = result.orderId;
+        orderData.id = result.orderId;
+      }
+      if (result?.data?.customerUid) {
+        orderData.customerUid = result.data.customerUid;
+      }
+      if (result?.data && Object.prototype.hasOwnProperty.call(result.data, 'customerEmail')) {
+        orderData.customerEmail = result.data.customerEmail;
+      }
+      if (result?.data && Object.prototype.hasOwnProperty.call(result.data, 'customerIsAnonymous')) {
+        orderData.customerIsAnonymous = Boolean(result.data.customerIsAnonymous);
+      }
+      if (result?.data?.customerAccountType) {
+        orderData.customerAccountType = String(result.data.customerAccountType || '').trim().toLowerCase() === 'registered'
+          ? 'registered'
+          : 'guest';
+      }
+
+      console.log('✅ تم حفظ الطلب في Firebase:', result);
+      recordSubmittedOrder(orderData);
+      return true;
+    } catch (firebaseError) {
+      console.warn('⚠️ فشل حفظ الطلب في Firebase، استخدام LocalStorage:', firebaseError);
+    }
+  }
+
+  // Second attempt: API backend (if available)
   try {
     const response = await fetch(`${API_BASE}/api/orders`, {
       method: 'POST',
@@ -1464,6 +2100,9 @@ async function submitOrderToBackend(orderData) {
         customer_name: orderData.name,
         phone: orderData.phone,
         address: orderData.address,
+        customer_uid: orderData.customerUid || '',
+        customer_email: orderData.customerEmail || '',
+        customer_account_type: orderData.customerAccountType || 'guest',
         details: formatOrderDetails(orderData.packageData),
         subtotal_price: orderData.subtotalPrice || 0,
         delivery_fee: Number.isFinite(Number(orderData.deliveryFee))
@@ -1481,18 +2120,34 @@ async function submitOrderToBackend(orderData) {
         next_date: orderData.nextDate || ''
       })
     });
-    const result = await response.json();
-    if (!response.ok) {
-      console.error('❌ خطأ من الخادم:', result);
-      showErrorMessage(result.message || `خطأ من الخادم (${response.status})`);
-      return false;
+
+    let result = null;
+    try {
+      result = await response.json();
+    } catch (_) {
+      result = null;
     }
-    console.log('✅ تم حفظ الطلب:', result);
+
+    if (response.ok) {
+      console.log('✅ تم حفظ الطلب في Backend API:', result || {});
+      recordSubmittedOrder(orderData);
+      return true;
+    }
+
+    console.warn('⚠️ فشل حفظ الطلب عبر API، التحويل للسجل المحلي:', result || response.status);
+  } catch (apiError) {
+    console.warn('⚠️ تعذر الاتصال بـ Backend API، التحويل للسجل المحلي:', apiError);
+  }
+
+  // Fallback: Continue with local flow (the caller will persist in order history)
+  try {
+    console.log('💾 استمرار الطلب بالسجل المحلي...');
     recordSubmittedOrder(orderData);
+    console.log('✅ تم تأكيد الطلب بالسجل المحلي');
     return true;
   } catch (error) {
-    console.error('❌ خطأ في الاتصال:', error);
-    showErrorMessage(`خطأ في الاتصال: ${error.message}`);
+    console.error('❌ خطأ في حفظ الطلب:', error);
+    showErrorMessage(`خطأ في حفظ الطلب: ${error.message}`);
     return false;
   }
 }

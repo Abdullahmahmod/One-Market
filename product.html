@@ -1,52 +1,438 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>تفاصيل المنتج - One market</title>
+  <meta name="description" content="تفاصيل المنتج في One Market مع السعر الحالي وإمكانية الإضافة المباشرة للعربة.">
+  <meta name="theme-color" content="#11b76b">
+  <title>تفاصيل المنتج - One Market</title>
   <link rel="icon" type="image/svg+xml" href="logo.svg">
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="theme.css?v=20260218">
-  <link rel="stylesheet" href="main.css?v=20260218">
-  <link rel="stylesheet" href="responsive.css?v=20260218">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <link rel="stylesheet" href="theme.css?v=20260328">
+  <link rel="stylesheet" href="responsive.css?v=20260328">
 </head>
 <body>
-  <!-- ===== Header ===== -->
   <header>
     <div class="site-brand">
-<div class="brand-text">
-        <h1>One market</h1>
-      <p>رمضان كريم</p></div>
+      <div class="brand-icon">🌱</div>
+      <div class="brand-text">
+        <h1>One Market</h1>
+        <p class="brand-tagline">خضار وفواكه طازة يومياً</p>
+      </div>
     </div>
     <nav class="site-nav">
       <a href="index.html">الرئيسية</a>
-      <a href="shop.html">المتجر</a>
+      <a href="shop.html" class="active">المتجر</a>
       <a href="about.html">عن المتجر</a>
       <a href="checkout.html">الدفع</a>
       <a href="orders.html">طلباتي</a>
-      <a href="cart.html">العربة</a>    </nav>
+      <a href="account.html">حسابي</a>
+      <a href="cart.html">العربة</a>
+    </nav>
+    <a href="cart.html" class="cart-icon-header" aria-label="العربة">
+      <span class="cart-icon">🛒</span>
+      <span class="cart-count" id="cartCount">0</span>
+    </a>
   </header>
 
-  <!-- ===== Main Content ===== -->
-  <main class="page-main">
-    <h2>تفاصيل المنتج</h2>
-    <p>وصف المنتج وصور وسعر.</p>
+  <main class="product-detail-page">
+    <div class="product-breadcrumb">
+      <a href="index.html">الرئيسية</a>
+      <span>/</span>
+      <a href="shop.html">المتجر</a>
+      <span>/</span>
+      <span id="productBreadcrumbLabel">تفاصيل المنتج</span>
+    </div>
+
+    <div id="productPageRoot" class="product-empty-state">
+      جارٍ تحميل تفاصيل المنتج...
+    </div>
   </main>
 
-  <!-- ===== Footer ===== -->
-  <footer>
-    <p>&copy; 2026 One market</p>
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <div class="site-footer__brand">
+        <strong>One Market</strong>
+        <p>تجربة شراء أوضح للخضار والفواكه مع توصيل محلي ودعم سريع.</p>
+        <div class="site-footer__chips">
+          <span>الدفع عند الاستلام</span>
+          <span>فودافون كاش</span>
+          <span>دعم واتساب</span>
+        </div>
+      </div>
+      <div class="site-footer__links">
+        <a href="about.html">عن المتجر</a>
+        <a href="faq.html">الأسئلة الشائعة</a>
+        <a href="privacy.html">الخصوصية</a>
+        <a href="terms.html">الشروط</a>
+        <a href="https://wa.me/201067465207" target="_blank" rel="noopener noreferrer">واتساب</a>
+      </div>
+      <div class="site-footer__meta">
+        <p>مناطق التوصيل: الأقصر المدينة، الحبيل، البغدادي، البياضية.</p>
+        <p>ساعات استقبال الطلبات: يومياً من 7:00 صباحاً إلى 3:00 مساءً.</p>
+        <p>&copy; 2026 One Market</p>
+      </div>
+    </div>
   </footer>
 
-  <script src="js/config.js?v=20260218"></script>
-  <script src="js/utils.js?v=20260218"></script>
-  <script src="js/main.js?v=20260218"></script>
+  <script src="js/config.js?v=20260328"></script>
+  <script src="js/utils.js?v=20260328"></script>
+  <script src="js/firebase-config.js?v=20260328"></script>
+  <script src="js/firebase-service.js?v=20260403"></script>
+  <script src="js/firebase-auth.js?v=20260328"></script>
+  <script type="module" src="js/firebase-bridge.js?v=20260328"></script>
+  <script>
+    (() => {
+      const PRODUCT_IMAGE_MAP = Object.freeze({
+        bell_pepper: 'filfil.png'
+      });
+
+      const PRODUCT_BADGE_MAP = Object.freeze({
+        strawberry: 'عرض موسمي'
+      });
+
+      const FRUIT_IDS = new Set([
+        'apple', 'orange', 'mandarin', 'lemon', 'lime', 'grapefruit', 'banana',
+        'grapes', 'mango', 'strawberry', 'watermelon', 'cantaloupe', 'melon',
+        'dates', 'sugar_apple', 'guava', 'peach', 'plum', 'apricot', 'fig',
+        'pomegranate', 'pear', 'cherry', 'kiwi', 'pineapple', 'coconut',
+        'avocado', 'blueberry', 'raspberry', 'blackberry'
+      ]);
+
+      const PRODUCT_COPY = Object.freeze({
+        tomato: {
+          description: 'طماطم طازة مناسبة للطبخ اليومي والسلطات والاستخدام السريع داخل البيت.',
+          tips: 'يفضل حفظها في مكان جيد التهوية واستخدامها خلال أيام قليلة للحفاظ على أفضل طعم.'
+        },
+        bell_pepper: {
+          description: 'فلفل رومي بطعم واضح ومناسب للطهي والحشوات والسلطات اليومية.',
+          tips: 'يُحفظ في الثلاجة ويُستخدم عند الحاجة مع بقاء القوام والطعم لفترة أفضل.'
+        },
+        strawberry: {
+          description: 'فراولة طازة مناسبة للتحلية والعصائر والوجبات السريعة المنزلية.',
+          tips: 'تُغسل قبل الاستخدام مباشرة للحفاظ على قوامها ونضارتها.'
+        }
+      });
+
+      let quantity = 0;
+
+      function normalizeQty(value) {
+        const num = Number(value);
+        if (!Number.isFinite(num) || num <= 0) return 0;
+        return Number(num.toFixed(2));
+      }
+
+      function formatQty(qty, unit) {
+        const normalized = normalizeQty(qty);
+        const text = Number.isInteger(normalized)
+          ? String(normalized)
+          : String(Number(normalized.toFixed(2))).replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1');
+        return `${text} ${unit}`;
+      }
+
+      function getStep(unit) {
+        return unit === 'كجم' ? 0.5 : 1;
+      }
+
+      function detectCategory(productId, product) {
+        if (FRUIT_IDS.has(productId)) return 'fruits';
+        if (product && product.unit === 'حزمة') return 'herbs';
+        return 'vegetables';
+      }
+
+      function getCategoryLabel(category) {
+        if (category === 'fruits') return 'فاكهة';
+        if (category === 'herbs') return 'خضرة';
+        return 'خضار';
+      }
+
+      function getProductDescription(productId, product, category) {
+        if (PRODUCT_COPY[productId]) return PRODUCT_COPY[productId];
+
+        if (category === 'fruits') {
+          return {
+            description: `${product.name} طازة مناسبة للاستهلاك اليومي والعصائر والوجبات الخفيفة المنزلية.`,
+            tips: 'يفضل حفظها بطريقة مناسبة حسب نوعها واستخدامها خلال مدة قصيرة للحفاظ على أفضل جودة.'
+          };
+        }
+
+        if (category === 'herbs') {
+          return {
+            description: `${product.name} مناسبة للتحضير اليومي وإضافة نكهة طازة للوجبات المنزلية.`,
+            tips: 'يفضل حفظها ملفوفة بشكل خفيف داخل الثلاجة للحفاظ على نضارتها.'
+          };
+        }
+
+        return {
+          description: `${product.name} مناسب للطبخ اليومي وتجهيز الوجبات المنزلية بشكل عملي وواضح.`,
+          tips: 'احفظ المنتج في المكان المناسب له حسب نوعه واستخدمه خلال مدة معقولة للحصول على أفضل نتيجة.'
+        };
+      }
+
+      function readCartPackage() {
+        try {
+          const raw = localStorage.getItem((window.STORAGE_KEYS && window.STORAGE_KEYS.CURRENT_PACKAGE) || 'cartPackage');
+          return raw ? JSON.parse(raw) : null;
+        } catch (_) {
+          return null;
+        }
+      }
+
+      function writeCartPackage(pkg) {
+        if (typeof window.savePackageToStorage === 'function') {
+          window.savePackageToStorage(pkg);
+        } else {
+          localStorage.setItem((window.STORAGE_KEYS && window.STORAGE_KEYS.CURRENT_PACKAGE) || 'cartPackage', JSON.stringify(pkg));
+        }
+      }
+
+      function updateHeaderCount(count = null) {
+        const badge = document.getElementById('cartCount');
+        if (!badge) return;
+        if (count !== null) {
+          badge.textContent = String(count);
+          return;
+        }
+
+        const pkg = readCartPackage();
+        badge.textContent = String(Object.keys((pkg && pkg.items) || {}).length);
+      }
+
+      function recalcPrice(items) {
+        return Object.entries(items || {}).reduce((sum, [id, qty]) => {
+          const price = Number((window.PRODUCTS && window.PRODUCTS[id] && window.PRODUCTS[id].unitPrice) || 0);
+          if (!Number.isFinite(price) || price <= 0) return sum;
+          return sum + (price * normalizeQty(qty));
+        }, 0);
+      }
+
+      function getCurrentProductId() {
+        const params = new URLSearchParams(window.location.search);
+        return String(params.get('id') || '').trim();
+      }
+
+      function getRelatedProducts(productId, category) {
+        return Object.entries(window.PRODUCTS || {})
+          .filter(([id, product]) => {
+            if (id === productId) return false;
+            const price = Number(product && product.unitPrice);
+            if (!Number.isFinite(price) || price <= 0) return false;
+            return detectCategory(id, product) === category;
+          })
+          .slice(0, 3);
+      }
+
+      function renderNotFound() {
+        const root = document.getElementById('productPageRoot');
+        if (!root) return;
+        root.innerHTML = `
+          <h2 style="margin-top:0;">المنتج غير موجود</h2>
+          <p style="margin-bottom:18px;color:var(--text-muted);">قد يكون الرابط غير صحيح أو أن المنتج لم يعد متاحاً الآن.</p>
+          <a class="store-hero__cta store-hero__cta--primary" href="shop.html">العودة إلى المتجر</a>
+        `;
+      }
+
+      function bindInteractions(productId, unit, price) {
+        const qtyValue = document.getElementById('productQtyValue');
+        const minusBtn = document.getElementById('productQtyMinus');
+        const plusBtn = document.getElementById('productQtyPlus');
+        const addBtn = document.getElementById('productAddToCart');
+        const step = getStep(unit);
+
+        const syncQty = () => {
+          if (qtyValue) qtyValue.textContent = formatQty(quantity || step, unit);
+          if (minusBtn) minusBtn.disabled = quantity <= step;
+          if (addBtn) {
+            addBtn.disabled = !Number.isFinite(price) || price <= 0;
+            addBtn.textContent = Number.isFinite(price) && price > 0
+              ? `أضف للعربة بـ ${window.formatPrice ? window.formatPrice((quantity || step) * price) : `${Math.round((quantity || step) * price)} جنيه`}`
+              : 'غير متاح حالياً';
+          }
+        };
+
+        if (plusBtn) {
+          plusBtn.addEventListener('click', () => {
+            quantity = normalizeQty((quantity || step) + step);
+            syncQty();
+          });
+        }
+
+        if (minusBtn) {
+          minusBtn.addEventListener('click', () => {
+            quantity = normalizeQty((quantity || step) - step);
+            if (quantity <= 0) quantity = step;
+            syncQty();
+          });
+        }
+
+        if (addBtn) {
+          addBtn.addEventListener('click', () => {
+            if (!Number.isFinite(price) || price <= 0) return;
+
+            const pkg = readCartPackage() || {
+              id: 'week',
+              name: 'طلب مخصص',
+              emoji: '🛒',
+              frequency: 'أسبوعي',
+              deliveryDays: 7,
+              isRecurring: false,
+              items: {}
+            };
+
+            pkg.items = pkg.items || {};
+            pkg.items[productId] = normalizeQty(quantity || step);
+            pkg.price = Number(recalcPrice(pkg.items).toFixed(2));
+            pkg.createdAt = pkg.createdAt || new Date().toISOString();
+
+            writeCartPackage(pkg);
+            updateHeaderCount(Object.keys(pkg.items).length);
+
+            if (typeof Swal !== 'undefined') {
+              Swal.fire({
+                icon: 'success',
+                title: 'تمت الإضافة',
+                text: `أضفنا ${window.PRODUCTS[productId].name} إلى العربة.`,
+                confirmButtonColor: '#2d8f4e'
+              });
+            } else {
+              alert(`تمت إضافة ${window.PRODUCTS[productId].name} إلى العربة.`);
+            }
+          });
+        }
+
+        syncQty();
+      }
+
+      function renderProduct(productId) {
+        const root = document.getElementById('productPageRoot');
+        const product = window.PRODUCTS && window.PRODUCTS[productId];
+        if (!root || !product) {
+          renderNotFound();
+          return;
+        }
+
+        const category = detectCategory(productId, product);
+        const copy = getProductDescription(productId, product, category);
+        const related = getRelatedProducts(productId, category);
+        const price = Number(product.unitPrice);
+        const available = Number.isFinite(price) && price > 0;
+        const imagePath = PRODUCT_IMAGE_MAP[productId];
+        const badge = PRODUCT_BADGE_MAP[productId];
+        const breadcrumbLabel = document.getElementById('productBreadcrumbLabel');
+        if (breadcrumbLabel) breadcrumbLabel.textContent = product.name;
+
+        const visual = imagePath
+          ? `<img class="product-detail-visual" src="${imagePath}" alt="${product.name}">`
+          : `<span class="product-detail-emoji" aria-hidden="true">${product.emoji || '🧺'}</span>`;
+
+        const relatedHtml = related.length
+          ? related.map(([id, item]) => `
+              <a class="product-related-card" href="product.html?id=${id}">
+                <h3>${item.emoji || '🧺'} ${item.name}</h3>
+                <span>${getCategoryLabel(detectCategory(id, item))} • ${item.unit}</span>
+                <strong>${window.formatPrice ? window.formatPrice(item.unitPrice) : `${Math.round(Number(item.unitPrice) || 0)} جنيه`}</strong>
+              </a>
+            `).join('')
+          : `<div class="product-info-card"><h3>لا توجد اقتراحات حالياً</h3><p>ستظهر هنا منتجات قريبة من نفس النوع عند توفرها.</p></div>`;
+
+        root.className = '';
+        root.innerHTML = `
+          <section class="product-hero-card">
+            <div class="product-detail-media">
+              ${visual}
+            </div>
+            <div class="product-detail-copy">
+              <div>
+                <span class="product-status-badge">${available ? 'متاح الآن' : 'غير متاح حالياً'}</span>
+                ${badge ? `<span class="product-badge-inline">${badge}</span>` : ''}
+                <h2 class="product-detail-title">${product.emoji || '🧺'} ${product.name}</h2>
+                <p class="product-detail-meta">${copy.description}</p>
+              </div>
+
+              <div class="product-detail-price">
+                <strong>${available && window.formatPrice ? window.formatPrice(price) : 'السعر غير متاح'}</strong>
+                <span>${available ? `لكل ${product.unit}` : 'يرجى المحاولة لاحقاً'}</span>
+              </div>
+
+              <div class="product-benefits">
+                <span>التصنيف: ${getCategoryLabel(category)}</span>
+                <span>الوحدة: ${product.unit}</span>
+                <span>الطلب: كميات مرنة</span>
+                <span>الدعم: واتساب مباشر</span>
+              </div>
+
+              <div class="product-detail-actions">
+                <div class="product-detail-stepper" aria-label="تغيير الكمية">
+                  <button id="productQtyPlus" class="product-step-btn" type="button" aria-label="زيادة الكمية">+</button>
+                  <span id="productQtyValue" class="product-qty-value">${product.unit}</span>
+                  <button id="productQtyMinus" class="product-step-btn" type="button" aria-label="تقليل الكمية">-</button>
+                </div>
+                <button id="productAddToCart" class="product-detail-cta" type="button">أضف للعربة</button>
+              </div>
+
+              <div class="product-detail-support">
+                <a href="cart.html">اذهب إلى العربة</a>
+                <a href="https://wa.me/201067465207" target="_blank" rel="noopener noreferrer">استفسر عبر واتساب</a>
+              </div>
+            </div>
+          </section>
+
+          <section class="product-detail-section">
+            <h3>تفاصيل سريعة</h3>
+            <div class="product-info-grid">
+              <article class="product-info-card">
+                <h3>الوصف</h3>
+                <p>${copy.description}</p>
+              </article>
+              <article class="product-info-card">
+                <h3>نصيحة استخدام</h3>
+                <p>${copy.tips}</p>
+              </article>
+              <article class="product-info-card">
+                <h3>التوصيل والدفع</h3>
+                <p>يمكنك إكمال الطلب بالدفع عند الاستلام أو فودافون كاش، مع تحديد منطقة التوصيل في الخطوة التالية.</p>
+              </article>
+            </div>
+          </section>
+
+          <section class="product-detail-section">
+            <h3>منتجات مشابهة</h3>
+            <div class="product-related-grid">
+              ${relatedHtml}
+            </div>
+          </section>
+        `;
+
+        quantity = getStep(product.unit);
+        bindInteractions(productId, product.unit, price);
+      }
+
+      async function initProductPage() {
+        updateHeaderCount();
+        const productId = getCurrentProductId();
+        if (!productId) {
+          renderNotFound();
+          return;
+        }
+
+        try {
+          await window.loadProductPrices();
+        } catch (error) {
+          console.warn('تعذر تحميل الأسعار في صفحة المنتج:', error);
+        }
+
+        renderProduct(productId);
+      }
+
+      document.addEventListener('DOMContentLoaded', initProductPage);
+      document.addEventListener('prices:updated', () => {
+        const productId = getCurrentProductId();
+        if (productId) renderProduct(productId);
+      });
+    })();
+  </script>
 </body>
 </html>
-
-
-
-
-
-
-
