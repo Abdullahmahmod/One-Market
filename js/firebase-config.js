@@ -8,27 +8,32 @@
  */
 
 // ✅ One Market Firebase config (provided from Firebase Console)
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDrxUv7rwGCWSbbXtISXGSlOJ1YB65TBn4",
-  authDomain: "one-market-af394.firebaseapp.com",
-  databaseURL: "https://one-market-af394-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "one-market-af394",
-  storageBucket: "one-market-af394.firebasestorage.app",
-  messagingSenderId: "648165516461",
-  appId: "1:648165516461:web:f164b0a00ba52bc3b85224",
-  measurementId: "G-XTB6JW52X2"
-};
+// Guard against duplicate declarations
+if (typeof FIREBASE_CONFIG === 'undefined') {
+  var FIREBASE_CONFIG = {
+    apiKey: "AIzaSyDrxUv7rwGCWSbbXtISXGSlOJ1YB65TBn4",
+    authDomain: "one-market-af394.firebaseapp.com",
+    databaseURL: "https://one-market-af394-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "one-market-af394",
+    storageBucket: "one-market-af394.firebasestorage.app",
+    messagingSenderId: "648165516461",
+    appId: "1:648165516461:web:f164b0a00ba52bc3b85224",
+    measurementId: "G-XTB6JW52X2"
+  };
+}
 
 /**
  * Firebase Reference Paths
  * مسارات قاعدة البيانات
  */
-const FIREBASE_PATHS = {
-  ORDERS: 'orders',
-  USERS: 'users',
-  PRODUCTS: 'products',
-  SETTINGS: 'settings'
-};
+if (typeof FIREBASE_PATHS === 'undefined') {
+  var FIREBASE_PATHS = {
+    ORDERS: 'orders',
+    USERS: 'users',
+    PRODUCTS: 'products',
+    SETTINGS: 'settings'
+  };
+}
 
 /**
  * Initialize Firebase
@@ -48,6 +53,7 @@ function initializeFirebase() {
     // Get references
     window.firebaseDB = firebase.database();
     window.firebaseAuth = firebase.auth();
+    window.firebaseStorage = firebase.storage();
     
     return true;
   } catch (error) {
@@ -80,12 +86,19 @@ function isFirebaseConfigured() {
 }
 
 // Auto-initialize on load if Firebase SDK is available
-if (typeof firebase !== 'undefined') {
-  document.addEventListener('DOMContentLoaded', () => {
-    if (validateFirebaseConfig()) {
-      initializeFirebase();
-    }
-  });
+if (typeof firebase !== 'undefined' && validateFirebaseConfig()) {
+  try {
+    initializeFirebase();
+    console.log('✅ Firebase initialized immediately on script load');
+  } catch (err) {
+    console.error('⚠️ Firebase initialization error, retrying on DOMContentLoaded:', err);
+    // Fallback to DOMContentLoaded if immediate init fails
+    document.addEventListener('DOMContentLoaded', () => {
+      if (validateFirebaseConfig()) {
+        initializeFirebase();
+      }
+    });
+  }
 }
 
 if (typeof window !== 'undefined') {

@@ -1,0 +1,27 @@
+{
+  "test-order-001": {
+    "orderId": "OM-TEST-001",
+    "name": "محمد علي - اختبار",
+    "phone": "01012345678",
+    "address": "الدقي - الجيزة",
+    "deliveryArea": "الدقي",
+    "price": 150,
+    "status": "pending",
+    "submittedAt": "2026-04-04T12:00:00.000Z",
+    "customerUid": "test-customer-uid",
+    "customerEmail": "test@example.com",
+    "customerIsAnonymous": false,
+    "customerAccountType": "guest",
+    "packageData": {
+      "items": {"tomato": 2, "cucumber": 3}
+    },
+    "statusHistory": [
+      {
+        "status": "pending",
+        "at": "2026-04-04T12:00:00.000Z",
+        "by": "system",
+        "note": "تم استلام الطلب"
+      }
+    ]
+  }
+}

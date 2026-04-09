@@ -17,7 +17,9 @@
 <body>
   <header>
     <div class="site-brand">
-      <div class="brand-icon">🌱</div>
+      <div class="brand-logo-container">
+        <img src="One-Market-Logo (3).png" alt="One Market Logo" class="brand-logo">
+      </div>
       <div class="brand-text">
         <h1>One Market</h1>
         <p class="brand-tagline">خضار وفواكه طازة يومياً</p>
@@ -71,23 +73,35 @@
         <a href="https://wa.me/201067465207" target="_blank" rel="noopener noreferrer">واتساب</a>
       </div>
       <div class="site-footer__meta">
-        <p>مناطق التوصيل: الأقصر المدينة، الحبيل، البغدادي، البياضية.</p>
+        <p>مناطق التوصيل: الأقصر المدينة، الحبيل، البغدادي، البياضية (10 ج.م)، مدينة طيبة (30 ج.م).</p>
         <p>ساعات استقبال الطلبات: يومياً من 7:00 صباحاً إلى 3:00 مساءً.</p>
         <p>&copy; 2026 One Market</p>
       </div>
     </div>
   </footer>
 
-  <script src="js/config.js?v=20260328"></script>
-  <script src="js/utils.js?v=20260328"></script>
   <script src="js/firebase-config.js?v=20260328"></script>
   <script src="js/firebase-service.js?v=20260403"></script>
   <script src="js/firebase-auth.js?v=20260328"></script>
+  <script src="js/config.js?v=20260328"></script>
+  <script src="js/utils.js?v=20260328"></script>
   <script type="module" src="js/firebase-bridge.js?v=20260328"></script>
   <script>
     (() => {
       const PRODUCT_IMAGE_MAP = Object.freeze({
-        bell_pepper: 'filfil.png'
+        tomato: 'طماطم.png',
+        white_onion: 'بصل ابيض.png',
+        red_onion: 'بصل احمر.png',
+        cucumber: 'خيار.png',
+        zucchini: 'كوسه.png',
+        potato: 'بطاطس.png',
+        bell_pepper: 'filfil.png',
+        apple: 'تفاح.png',
+        orange: 'برتقال .png',
+        mandarin: 'يوسفي.png',
+        lemon: 'ليمون.png',
+        banana: 'موز.png',
+        strawberry: 'فراوله.png'
       });
 
       const PRODUCT_BADGE_MAP = Object.freeze({
@@ -319,13 +333,14 @@
         const related = getRelatedProducts(productId, category);
         const price = Number(product.unitPrice);
         const available = Number.isFinite(price) && price > 0;
-        const imagePath = PRODUCT_IMAGE_MAP[productId];
+        // Check for image in priority order: Firebase URL > Local image > Emoji
+        const imageUrl = product.imageUrl || PRODUCT_IMAGE_MAP[productId] || product.image;
         const badge = PRODUCT_BADGE_MAP[productId];
         const breadcrumbLabel = document.getElementById('productBreadcrumbLabel');
         if (breadcrumbLabel) breadcrumbLabel.textContent = product.name;
 
-        const visual = imagePath
-          ? `<img class="product-detail-visual" src="${imagePath}" alt="${product.name}">`
+        const visual = imageUrl
+          ? `<img class="product-detail-visual" src="${imageUrl}" alt="${product.name}" onerror="this.onerror=null; this.outerHTML='<span class=\'product-detail-emoji\' aria-hidden=\'true\'>${product.emoji || '🧺'}</span>';">`
           : `<span class="product-detail-emoji" aria-hidden="true">${product.emoji || '🧺'}</span>`;
 
         const relatedHtml = related.length

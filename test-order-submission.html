@@ -1,0 +1,268 @@
+/**
+ * 🧪 اختبار سريع: هل الطلبات توصل؟
+ * افتح هذا الرابط في الموبايل أو الكمبيوتر:
+ * https://one-market-af394.web.app/test-order-submission.html
+ */
+
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>اختبار إرسال الطلبات</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 { color: #333; }
+    .form-group {
+      margin: 15px 0;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input, textarea, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      width: 100%;
+      margin-top: 15px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    .console {
+      background: #1e1e1e;
+      color: #00ff00;
+      padding: 15px;
+      border-radius: 4px;
+      margin-top: 20px;
+      font-family: monospace;
+      max-height: 300px;
+      overflow-y: auto;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .copy-button {
+      background: #2196F3;
+      color: white;
+      padding: 8px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+    .copy-button:hover {
+      background: #0b7dda;
+    }
+    .log-line {
+      margin: 5px 0;
+      padding: 5px;
+      border-left: 3px solid #666;
+      padding-left: 10px;
+    }
+    .log-success { border-left-color: #00ff00; color: #00ff00; }
+    .log-error { border-left-color: #ff0000; color: #ff0000; }
+    .log-warning { border-left-color: #ffff00; color: #ffff00; }
+    .log-info { border-left-color: #00ccff; color: #00ccff; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 اختبار إرسال الطلب</h1>
+    
+    <div id="successMessage" style="display:none; background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+      ✅ <strong>تم الإرسال بنجاح!</strong>
+      <p>الطلب محفوظ في Firebase والـ logs أسفل تحت للمرجع</p>
+    </div>
+    
+    <form id="testForm">
+      <div class="form-group">
+        <label for="name">الاسم:</label>
+        <input type="text" id="name" name="name" value="اختبار" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="phone">الهاتف:</label>
+        <input type="tel" id="phone" name="phone" value="01012345678" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="deliveryArea">منطقة التوصيل:</label>
+        <select id="deliveryArea" name="deliveryArea" required>
+          <option value="">اختر المنطقة</option>
+          <option value="الدقي">الدقي</option>
+          <option value="الجيزة">الجيزة</option>
+          <option value="الهرم">الهرم</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="address">العنوان:</label>
+        <textarea id="address" name="address" required>شارع اختبار، رقم 123</textarea>
+      </div>
+      
+      <button type="submit">إرسال الطلب</button>
+    </form>
+    
+    <div class="console" id="console"></div>
+    <button class="copy-button" onclick="copyConsoleText()">📋 نسخ جميع الرسائل</button>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+
+  <script>
+    // Store logs in memory (persistent during page lifetime)
+    let logs = [];
+    const consoleEl = document.getElementById('console');
+    
+    function log(message, type = 'info') {
+      logs.push(message);
+      const line = document.createElement('div');
+      line.className = `log-line log-${type}`;
+      line.textContent = message;
+      consoleEl.appendChild(line);
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+      console.log(`[${type}] ${message}`);
+    }
+
+    function copyConsoleText() {
+      const text = logs.join('\n');
+      navigator.clipboard.writeText(text).then(() => {
+        alert('✅ تم نسخ جميع الرسائل للـ clipboard!');
+      }).catch(err => {
+        console.error('فشل النسخ:', err);
+        alert('❌ فشل النسخ تلقائياً، جرب اختيار النص يدوياً من الـ console');
+      });
+    }
+
+    // Firebase config
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyDrxUv7rwGCWSbbXtISXGSlOJ1YB65TBn4",
+      authDomain: "one-market-af394.firebaseapp.com",
+      databaseURL: "https://one-market-af394-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "one-market-af394",
+      storageBucket: "one-market-af394.firebasestorage.app",
+      messagingSenderId: "648165516461",
+      appId: "1:648165516461:web:f164b0a00ba52bc3b85224",
+      measurementId: "G-XTB6JW52X2"
+    };
+
+    // Initialize Firebase
+    log('🚀 جاري تهيئة Firebase...', 'info');
+    try {
+      if (!firebase.apps.length) {
+        firebase.initializeApp(FIREBASE_CONFIG);
+        log('✅ تم تهيئة Firebase بنجاح', 'success');
+      }
+    } catch (error) {
+      log(`❌ خطأ في تهيئة Firebase: ${error.message}`, 'error');
+    }
+
+    // Handle form submission
+    document.getElementById('testForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+      log('📝 بدء إرسال الطلب...', 'info');
+
+      try {
+        const name = document.getElementById('name').value;
+        const phone = document.getElementById('phone').value;
+        const deliveryArea = document.getElementById('deliveryArea').value;
+        const address = document.getElementById('address').value;
+
+        log(`👤 الاسم: ${name}`, 'info');
+        log(`📞 الهاتف: ${phone}`, 'info');
+        log(`📍 المنطقة: ${deliveryArea}`, 'info');
+
+        // Ensure anonymous auth
+        log('🔐 جاري إعداد الجلسة...', 'info');
+        const auth = firebase.auth();
+        if (!auth.currentUser) {
+          const result = await auth.signInAnonymously();
+          log(`✅ جلسة مجهولة تم إنشاؤها: ${result.user.uid}`, 'success');
+        }
+
+        // Create order object
+        const orderId = `OM-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const order = {
+          orderId,
+          name,
+          phone,
+          deliveryArea,
+          address: `${deliveryArea} - ${address}`,
+          price: 150,
+          status: 'pending',
+          submittedAt: new Date().toISOString(),
+          customerUid: auth.currentUser?.uid || null,
+          customerIsAnonymous: auth.currentUser?.isAnonymous || true,
+          customerAccountType: 'guest',
+          packageData: { items: { test: 1 } }
+        };
+
+        log(`📦 رقم الطلب: ${orderId}`, 'info');
+
+        // Write to Firebase
+        log('💾 جاري كتابة الطلب إلى Firebase...', 'info');
+        const db = firebase.database();
+        const ref = db.ref(`orders/${orderId}`);
+        await ref.set(order);
+        
+        log(`✅ تم حفظ الطلب بنجاح!`, 'success');
+        log(`🔗 يمكنك التحقق من الطلب على الرابط:`, 'success');
+        log(`https://console.firebase.google.com/project/one-market-af394/database/one-market-af394-default-rtdb/data/orders/${orderId}`, 'success');
+
+        // Verify it was saved
+        log('✔️ التحقق من الحفظ...', 'info');
+        const snapshot = await ref.once('value');
+        if (snapshot.exists()) {
+          log('✅ تم التحقق: الطلب موجود في قاعدة البيانات!', 'success');
+          log('━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+          
+          // Show success message
+          document.getElementById('successMessage').style.display = 'block';
+          document.getElementById('testForm').style.display = 'none';
+          
+          console.log('الطلب المحفوظ:', snapshot.val());
+        } else {
+          log('❌ خطأ: الطلب ما حُفظ!', 'error');
+          log('━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+        }
+
+      } catch (error) {
+        log(`❌ خطأ: ${error.message}`, 'error');
+        log('━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+        console.error(error);
+      }
+    });
+
+    log('✨ تم تحضير الصفحة', 'success');
+  </script>
+</body>
+</html>

@@ -3,9 +3,13 @@
  * Exposes a small API that the existing storefront can consume through a bridge.
  */
 
-// Firebase compat/modular bridge helpers
-const firebaseDatabaseApi = (typeof firebase !== 'undefined' && firebase.database) ? firebase.database : null;
-const firebaseAuthApi = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth : null;
+// Firebase compat/modular bridge helpers - only declare if not already done
+if (typeof firebaseDatabaseApi === 'undefined') {
+  var firebaseDatabaseApi = (typeof firebase !== 'undefined' && firebase.database) ? firebase.database : null;
+}
+if (typeof firebaseAuthApi === 'undefined') {
+  var firebaseAuthApi = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth : null;
+}
 
 function ref(db, path) {
   if (db && typeof db.ref === 'function') {
@@ -285,24 +289,21 @@ const FirebaseService = {
     try {
       const auth = window.firebaseAuth;
       if (!auth) {
-        return { success: false, error: 'Firebase auth is unavailable' };
+        return { success: false, error: 'Firebase auth is unavailable', skipSession: true };
       }
 
+      // If already logged in, return current user
       if (auth.currentUser) {
+        console.log('✅ Using existing Firebase user:', auth.currentUser.uid);
         return { success: true, user: auth.currentUser };
       }
 
-      const result = await auth.signInAnonymously();
-      return { success: true, user: result.user };
+      // Anonymous auth is disabled in Firebase, so we skip it
+      console.warn('ℹ️ Anonymous authentication is disabled. Continuing without user session.');
+      return { success: false, skipSession: true };
     } catch (error) {
-      const code = extractFirebaseErrorCode(error);
-      const message = toReadableFirebaseError(error);
-      if (code === 'auth/configuration-not-found') {
-        console.warn('Firebase anonymous auth disabled, continuing without session.');
-      } else {
-        console.error('Firebase ensureCustomerSession failed:', error);
-      }
-      return { success: false, error: message, code };
+      console.warn('⚠️ Session setup skipped:', error.message);
+      return { success: false, skipSession: true };
     }
   },
 
@@ -311,18 +312,22 @@ const FirebaseService = {
       const db = window.firebaseDB;
       const ordersRef = ref(db, 'orders');
       const newOrderRef = push(ordersRef);
+      
+      // Try to get session, but continue even if it fails
       const sessionResult = await this.ensureCustomerSession();
-      const userFromSession = sessionResult?.success ? sessionResult.user : this.getCurrentUser();
+      const userFromSession = sessionResult?.success ? sessionResult.user : null;
+      const skipSession = sessionResult?.skipSession === true;
+      
       const customerUid = String(orderData?.customerUid || userFromSession?.uid || '').trim();
       const customerPhone = String(orderData?.customerPhone || orderData?.phone || '').trim();
       const customerPhoneNormalized = normalizePhone(customerPhone);
       const customerEmail = String(orderData?.customerEmail || userFromSession?.email || '').trim();
       const customerIsAnonymous = typeof orderData?.customerIsAnonymous === 'boolean'
         ? orderData.customerIsAnonymous
-        : Boolean(userFromSession?.isAnonymous);
+        : (userFromSession ? Boolean(userFromSession?.isAnonymous) : true);
       const customerAccountType = String(
         orderData?.customerAccountType
-        || (customerUid ? (customerIsAnonymous ? 'guest' : 'registered') : 'guest')
+        || (customerUid && !customerIsAnonymous ? 'registered' : 'guest')
       ).trim().toLowerCase();
       const orderId = orderData.orderId || orderData.id || generateFallbackOrderId(newOrderRef.key);
       const normalizedStatus = normalizeOrderStatus(orderData?.status || 'pending');
@@ -878,6 +883,81 @@ const FirebaseService = {
       };
     } catch (error) {
       console.error('Firebase getDashboardStats failed:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  /**
+   * Upload product image to Firebase Storage
+   * رفع صورة المنتج إلى Firebase Storage
+   */
+  async uploadProductImage(productId, file) {
+    try {
+      if (!window.firebaseStorage) {
+        return { success: false, error: 'Firebase Storage not initialized' };
+      }
+
+      const timestamp = Date.now();
+      const fileName = `${timestamp}_${file.name}`;
+      const storageRef = window.firebaseStorage.ref(`products/${productId}/${fileName}`);
+      
+      // Upload file
+      const snapshot = await storageRef.put(file);
+      
+      // Get download URL
+      const downloadUrl = await snapshot.ref.getDownloadURL();
+      
+      return {
+        success: true,
+        url: downloadUrl,
+        path: `products/${productId}/${fileName}`,
+        fileName: fileName
+      };
+    } catch (error) {
+      console.error('Firebase uploadProductImage failed:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  /**
+   * Delete product image from Firebase Storage
+   * حذف صورة المنتج من Firebase Storage
+   */
+  async deleteProductImage(imagePath) {
+    try {
+      if (!window.firebaseStorage) {
+        return { success: false, error: 'Firebase Storage not initialized' };
+      }
+
+      const storageRef = window.firebaseStorage.ref(imagePath);
+      await storageRef.delete();
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Firebase deleteProductImage failed:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  /**
+   * Update product with image URL
+   * تحديث المنتج برابط الصورة
+   */
+  async updateProductImage(productId, imageUrl, imagePath = null) {
+    try {
+      const updates = {
+        imageUrl: imageUrl,
+        updatedAt: Date.now()
+      };
+      
+      if (imagePath) {
+        updates.imagePath = imagePath;
+      }
+
+      const result = await this.updateProduct(productId, updates);
+      return result;
+    } catch (error) {
+      console.error('Firebase updateProductImage failed:', error);
       return { success: false, error: error.message };
     }
   }

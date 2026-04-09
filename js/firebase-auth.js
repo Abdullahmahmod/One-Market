@@ -10,13 +10,15 @@
  * - إدارة الجلسات
  */
 
-const FirebaseAuth = (() => {
-  'use strict';
+// Guard against duplicate declarations
+if (typeof FirebaseAuth === 'undefined') {
+  var FirebaseAuth = (() => {
+    'use strict';
 
-  const CONFIG = {
-    sessionKey: 'firebaseUserSession',
-    sessionDurationMs: 7 * 24 * 60 * 60 * 1000 // 7 days
-  };
+    const CONFIG = {
+      sessionKey: 'firebaseUserSession',
+      sessionDurationMs: 7 * 24 * 60 * 60 * 1000 // 7 days
+    };
 
   /**
    * User Management
@@ -304,7 +306,10 @@ const FirebaseAuth = (() => {
       return true;
     }
   };
-})();
+  })();
+}
 
 // Expose to global scope
-window.FirebaseAuth = FirebaseAuth;
+if (typeof window !== 'undefined') {
+  window.FirebaseAuth = FirebaseAuth;
+}

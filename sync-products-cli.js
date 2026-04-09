@@ -1,0 +1,104 @@
+#!/usr/bin/env node
+
+/**
+ * Sync Products to Firebase using Firebase CLI
+ * ==========================================
+ * Uses Firebase CLI to deploy a data import
+ * 
+ * Usage: 
+ *   1. firebase use one-market-af394
+ *   2. firebase database:set /products products.json
+ */
+
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+// PRODUCTS - extracted from config.js with only essential fields
+const PRODUCTS = {
+  tomato: { label: '🍅 طماطم', emoji: '🍅', name: 'طماطم', unit: 'كجم', unitPrice: null },
+  white_onion: { label: '🧅 بصل أبيض', emoji: '🧅', name: 'بصل أبيض', unit: 'كجم', unitPrice: null },
+  red_onion: { label: '🧅 بصل أحمر', emoji: '🧅', name: 'بصل أحمر', unit: 'كجم', unitPrice: null },
+  cucumber: { label: '🥒 خيار', emoji: '🥒', name: 'خيار', unit: 'كجم', unitPrice: null },
+  zucchini: { label: '🥒 كوسة', emoji: '🥒', name: 'كوسة', unit: 'كجم', unitPrice: null },
+  eggplant: { label: '🍆 باذنجان', emoji: '🍆', name: 'باذنجان', unit: 'كجم', unitPrice: null },
+  carrot: { label: '🥕 جزر', emoji: '🥕', name: 'جزر', unit: 'كجم', unitPrice: null },
+  bell_pepper: { label: '🫑 فلفل رومي', emoji: '🫑', name: 'فلفل رومي', unit: 'كجم', unitPrice: null },
+  chili: { label: '🫑 فلفل حار أخضر', emoji: '🫑', name: 'فلفل حار أخضر', unit: 'كجم', unitPrice: null },
+  potato: { label: '🥔 بطاطس', emoji: '🥔', name: 'بطاطس', unit: 'كجم', unitPrice: null },
+  hot_pepper: { label: '🫑 فلفل حار أخضر', emoji: '🫑', name: 'فلفل حار أخضر', unit: 'كجم', unitPrice: null },
+  green_beans: { label: '🫘 فاصوليا خضراء', emoji: '🫘', name: 'فاصوليا خضراء', unit: 'كجم', unitPrice: null },
+  peas: { label: '🫘 بسلة', emoji: '🫘', name: 'بسلة', unit: 'كجم', unitPrice: null },
+  okra: { label: '🥗 بامية', emoji: '🥗', name: 'بامية', unit: 'كجم', unitPrice: null },
+  spinach: { label: '🥬 سبانخ', emoji: '🥬', name: 'سبانخ', unit: 'حزمة', unitPrice: null },
+  molokhia: { label: '🥬 ملوخية', emoji: '🥬', name: 'ملوخية', unit: 'حزمة', unitPrice: null },
+  parsley: { label: '🌿 بقدونس', emoji: '🌿', name: 'بقدونس', unit: 'حزمة', unitPrice: null },
+  coriander: { label: '🌿 كزبرة', emoji: '🌿', name: 'كزبرة', unit: 'حزمة', unitPrice: null },
+  dill: { label: '🌿 شبت', emoji: '🌿', name: 'شبت', unit: 'حزمة', unitPrice: null },
+  arugula: { label: '🌿 جرجير', emoji: '🌿', name: 'جرجير', unit: 'حزمة', unitPrice: null },
+  lettuce: { label: '🥬 خس', emoji: '🥬', name: 'خس', unit: 'حبة', unitPrice: null },
+  cabbage: { label: '🥬 كرنب', emoji: '🥬', name: 'كرنب', unit: 'حبة', unitPrice: null },
+  broccoli: { label: '🥦 بروكلي', emoji: '🥦', name: 'بروكلي', unit: 'حبة', unitPrice: null },
+  cauliflower: { label: '🥦 قرنبيط', emoji: '🥦', name: 'قرنبيط', unit: 'حبة', unitPrice: null },
+  celery: { label: '🥬 كرفس', emoji: '🥬', name: 'كرفس', unit: 'حزمة', unitPrice: null },
+  leek: { label: '🌱 كرات', emoji: '🌱', name: 'كرات', unit: 'حزمة', unitPrice: null },
+  spring_onion: { label: '🧅 بصل أخضر', emoji: '🧅', name: 'بصل أخضر', unit: 'حزمة', unitPrice: null },
+  garlic: { label: '🧄 ثوم', emoji: '🧄', name: 'ثوم', unit: 'كجم', unitPrice: null },
+  ginger: { label: '🫚 زنجبيل', emoji: '🫚', name: 'زنجبيل', unit: 'كجم', unitPrice: null },
+  sweet_potato: { label: '🍠 بطاطا حلوة', emoji: '🍠', name: 'بطاطا حلوة', unit: 'كجم', unitPrice: null },
+  corn: { label: '🌽 ذرة', emoji: '🌽', name: 'ذرة', unit: 'حبة', unitPrice: null },
+  apple: { label: '🍎 تفاح', emoji: '🍎', name: 'تفاح', unit: 'كجم', unitPrice: null },
+  orange: { label: '🍊 برتقال', emoji: '🍊', name: 'برتقال', unit: 'كجم', unitPrice: null },
+  mandarin: { label: '🍊 يوسفي', emoji: '🍊', name: 'يوسفي', unit: 'كجم', unitPrice: null },
+  lemon: { label: '🍋 ليمون', emoji: '🍋', name: 'ليمون', unit: 'كجم', unitPrice: null },
+  lime: { label: '🍋 ليمون أخضر', emoji: '🍋', name: 'ليمون أخضر', unit: 'كجم', unitPrice: null },
+  grapefruit: { label: '🍊 جريب فروت', emoji: '🍊', name: 'جريب فروت', unit: 'كجم', unitPrice: null },
+  banana: { label: '🍌 موز', emoji: '🍌', name: 'موز', unit: 'كجم', unitPrice: null },
+  grapes: { label: '🍇 عنب', emoji: '🍇', name: 'عنب', unit: 'كجم', unitPrice: null },
+  mango: { label: '🥭 مانجو', emoji: '🥭', name: 'مانجو', unit: 'كجم', unitPrice: null },
+  strawberry: { label: '🍓 فراولة', emoji: '🍓', name: 'فراولة', unit: 'كجم', unitPrice: null },
+  watermelon: { label: '🍉 بطيخ', emoji: '🍉', name: 'بطيخ', unit: 'حبة', unitPrice: null },
+  cantaloupe: { label: '🍈 كنتالوب', emoji: '🍈', name: 'كنتالوب', unit: 'حبة', unitPrice: null },
+  melon: { label: '🍈 شمام', emoji: '🍈', name: 'شمام', unit: 'حبة', unitPrice: null },
+  dates: { label: '🌴 بلح', emoji: '🌴', name: 'بلح', unit: 'كجم', unitPrice: null },
+  sugar_apple: { label: '🍈 نجا (قشطة)', emoji: '🍈', name: 'نجا (قشطة)', unit: 'حبة', unitPrice: null },
+  guava: { label: '🍐 جوافة', emoji: '🍐', name: 'جوافة', unit: 'كجم', unitPrice: null },
+  peach: { label: '🍑 خوخ', emoji: '🍑', name: 'خوخ', unit: 'كجم', unitPrice: null },
+  plum: { label: '🍑 برقوق', emoji: '🍑', name: 'برقوق', unit: 'كجم', unitPrice: null },
+  apricot: { label: '🍑 مشمش', emoji: '🍑', name: 'مشمش', unit: 'كجم', unitPrice: null },
+  fig: { label: '🍐 تين', emoji: '🍐', name: 'تين', unit: 'كجم', unitPrice: null },
+  pomegranate: { label: '🍎 رمان', emoji: '🍎', name: 'رمان', unit: 'كجم', unitPrice: null },
+  pear: { label: '🍐 كمثرى', emoji: '🍐', name: 'كمثرى', unit: 'كجم', unitPrice: null },
+  cherry: { label: '🍒 كرز', emoji: '🍒', name: 'كرز', unit: 'كجم', unitPrice: null },
+  kiwi: { label: '🥝 كيوي', emoji: '🥝', name: 'كيوي', unit: 'كجم', unitPrice: null },
+  pineapple: { label: '🍍 أناناس', emoji: '🍍', name: 'أناناس', unit: 'حبة', unitPrice: null },
+  coconut: { label: '🥥 جوز هند', emoji: '🥥', name: 'جوز هند', unit: 'حبة', unitPrice: null },
+  avocado: { label: '🥑 أفوكادو', emoji: '🥑', name: 'أفوكادو', unit: 'حبة', unitPrice: null },
+  blueberry: { label: '🫐 توت أزرق', emoji: '🫐', name: 'توت أزرق', unit: 'كجم', unitPrice: null },
+  raspberry: { label: '🍓 توت أحمر', emoji: '🍓', name: 'توت أحمر', unit: 'كجم', unitPrice: null },
+  blackberry: { label: '🫐 توت أسود', emoji: '🫐', name: 'توت أسود', unit: 'كجم', unitPrice: null }
+};
+
+// Save products to JSON file
+const productsPath = path.join(__dirname, 'products.json');
+fs.writeFileSync(productsPath, JSON.stringify(PRODUCTS, null, 2));
+
+console.log('📄 Created products.json with', Object.keys(PRODUCTS).length, 'products');
+
+try {
+  console.log('🚀 Pushing products to Firebase using CLI...');
+  
+  // Use firebase CLI to set the data
+  const command = `firebase database:set /products "${productsPath}" --force`;
+  execSync(command, { stdio: 'inherit', cwd: __dirname });
+  
+  console.log('✅ Successfully synced all products to Firebase!');
+  
+} catch (error) {
+  console.error('❌ Error pushing to Firebase:', error.message);
+  console.error('Make sure you have:');
+  console.error('  1. firebase CLI installed globally');
+  console.error('  2. Run: firebase login');
+  console.error('  3. Run: firebase use one-market-af394');
+  process.exit(1);
+}

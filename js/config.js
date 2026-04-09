@@ -29,35 +29,40 @@ const PRODUCTS = {
     emoji: '🍅',
     name: 'طماطم',
     unit: 'كجم',
-    unitPrice: null // سيتم جلب السعر من الشيت
+    unitPrice: null,
+    image: 'طماطم.png'
   },
   white_onion: {
     label: '🧅 بصل أبيض',
     emoji: '🧅',
     name: 'بصل أبيض',
     unit: 'كجم',
-    unitPrice: null
+    unitPrice: null,
+    image: 'بصل ابيض.png'
   },
   red_onion: {
     label: '🧅 بصل أحمر',
     emoji: '🧅',
     name: 'بصل أحمر',
     unit: 'كجم',
-    unitPrice: null
+    unitPrice: null,
+    image: 'بصل احمر.png'
   },
   cucumber: {
     label: '🥒 خيار',
     emoji: '🥒',
     name: 'خيار',
     unit: 'كجم',
-    unitPrice: null
+    unitPrice: null,
+    image: 'خيار.png'
   },
   zucchini: {
     label: '🥒 كوسة',
     emoji: '🥒',
     name: 'كوسة',
     unit: 'كجم',
-    unitPrice: null
+    unitPrice: null,
+    image: 'كوسه.png'
   },
   eggplant: {
     label: '🍆 باذنجان',
@@ -78,7 +83,8 @@ const PRODUCTS = {
     emoji: '🫑',
     name: 'فلفل رومي',
     unit: 'كجم',
-    unitPrice: null
+    unitPrice: null,
+    image: 'filfil.png'
   },
   chili: {
     label: '🫑 فلفل حار أخضر',
@@ -92,7 +98,8 @@ const PRODUCTS = {
     emoji: '🥔',
     name: 'بطاطس',
     unit: 'كجم',
-    unitPrice: null
+    unitPrice: null,
+    image: 'بطاطس.png'
   },
   hot_pepper: {
     label: '🫑 فلفل حار أخضر',
@@ -246,28 +253,32 @@ const PRODUCTS = {
     emoji: '🍎',
     name: 'تفاح',
     unit: 'كجم',
-    unitPrice: null
+    unitPrice: null,
+    image: 'تفاح.png'
   },
   orange: {
     label: '🍊 برتقال',
     emoji: '🍊',
     name: 'برتقال',
     unit: 'كجم',
-    unitPrice: null
+    unitPrice: null,
+    image: 'برتقال .png'
   },
   mandarin: {
     label: '🍊 يوسفي',
     emoji: '🍊',
     name: 'يوسفي',
     unit: 'كجم',
-    unitPrice: null
+    unitPrice: null,
+    image: 'يوسفي.png'
   },
   lemon: {
     label: '🍋 ليمون',
     emoji: '🍋',
     name: 'ليمون',
     unit: 'كجم',
-    unitPrice: null
+    unitPrice: null,
+    image: 'ليمون.png'
   },
   lime: {
     label: '🍋 ليمون أخضر',
@@ -288,7 +299,8 @@ const PRODUCTS = {
     emoji: '🍌',
     name: 'موز',
     unit: 'كجم',
-    unitPrice: null
+    unitPrice: null,
+    image: 'موز.png'
   },
   grapes: {
     label: '🍇 عنب',
@@ -309,7 +321,8 @@ const PRODUCTS = {
     emoji: '🍓',
     name: 'فراولة',
     unit: 'كجم',
-    unitPrice: null
+    unitPrice: null,
+    image: 'فراوله.png'
   },
   watermelon: {
     label: '🍉 بطيخ',
@@ -1083,6 +1096,59 @@ function prunePackagesByPrices(pricesMap, options = {}) {
   });
 }
 
+/**
+ * Load complete product catalog from Firebase
+ * Merges Firebase products with local PRODUCTS config
+ */
+async function loadProductsFromFirebase() {
+  try {
+    const firebaseBridge = typeof window !== 'undefined' ? window.FirebaseBridge : null;
+    if (!firebaseBridge || typeof firebaseBridge.isEnabled !== 'function' || !firebaseBridge.isEnabled()) {
+      console.warn('⚠️ Firebase not enabled, using local PRODUCTS only');
+      return { success: false, source: 'local', products: PRODUCTS };
+    }
+
+    const result = await firebaseBridge.service.getAllProducts();
+    if (!result.success) {
+      console.warn('⚠️ Failed to load products from Firebase:', result.error);
+      return { success: false, source: 'local', products: PRODUCTS };
+    }
+
+    const firebaseProducts = result.products || {};
+    const productCount = Object.keys(firebaseProducts).length;
+
+    if (productCount === 0) {
+      console.warn('⚠️ Firebase products collection is empty, using local PRODUCTS');
+      return { success: false, source: 'local', products: PRODUCTS };
+    }
+
+    // Merge Firebase products with local defaults (preserve local structure)
+    Object.entries(firebaseProducts).forEach(([productId, fbProduct]) => {
+      if (PRODUCTS[productId]) {
+        // Merge Firebase data into existing product
+        Object.assign(PRODUCTS[productId], {
+          label: fbProduct.label || PRODUCTS[productId].label,
+          emoji: fbProduct.emoji || PRODUCTS[productId].emoji,
+          name: fbProduct.name || PRODUCTS[productId].name,
+          unit: fbProduct.unit || PRODUCTS[productId].unit,
+          unitPrice: fbProduct.unitPrice !== undefined ? fbProduct.unitPrice : PRODUCTS[productId].unitPrice,
+          imageUrl: fbProduct.imageUrl || PRODUCTS[productId].imageUrl,
+          imagePath: fbProduct.imagePath || PRODUCTS[productId].imagePath
+        });
+      } else {
+        // Add new product from Firebase
+        PRODUCTS[productId] = fbProduct;
+      }
+    });
+
+    console.log(`✅ تم تحميل المنتجات من Firebase: ${productCount} منتج`);
+    return { success: true, source: 'firebase', products: PRODUCTS, count: productCount };
+  } catch (error) {
+    console.error('❌ Error loading products from Firebase:', error);
+    return { success: false, source: 'local', products: PRODUCTS, error: error.message };
+  }
+}
+
 function loadProductPrices(force = false) {
   if (!force && productPricesPromise) return productPricesPromise;
 
@@ -1267,6 +1333,7 @@ if (typeof module !== 'undefined' && module.exports) {
   ERROR_MESSAGES,
   SUCCESS_MESSAGES,
     UI_CONSTANTS,
+    loadProductsFromFirebase,
     loadProductPrices,
     applyProductPrices,
     getCurrentProductPrices
@@ -1285,6 +1352,7 @@ if (typeof window !== 'undefined') {
   window.ERROR_MESSAGES = ERROR_MESSAGES;
   window.SUCCESS_MESSAGES = SUCCESS_MESSAGES;
   window.UI_CONSTANTS = UI_CONSTANTS;
+  window.loadProductsFromFirebase = loadProductsFromFirebase;
   window.loadProductPrices = loadProductPrices;
   window.applyProductPrices = applyProductPrices;
   window.getCurrentProductPrices = getCurrentProductPrices;

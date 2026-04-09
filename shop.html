@@ -38,7 +38,9 @@
   <!-- ===== Header ===== -->
   <header>
     <div class="site-brand">
-      <div class="brand-icon">🌱</div>
+      <div class="brand-logo-container">
+        <img src="One-Market-Logo (3).png" alt="One Market Logo" class="brand-logo">
+      </div>
       <div class="brand-text">
         <h1>One Market</h1>
         <p class="brand-tagline">خضار وفواكه طازة يومياً</p>
@@ -161,25 +163,38 @@
         <a href="https://wa.me/201067465207" target="_blank" rel="noopener noreferrer">واتساب</a>
       </div>
       <div class="site-footer__meta">
-        <p>مناطق التوصيل: الأقصر المدينة، الحبيل، البغدادي، البياضية.</p>
+        <p>مناطق التوصيل: الأقصر المدينة، الحبيل، البغدادي، البياضية (10 ج.م)، مدينة طيبة (30 ج.م).</p>
         <p>ساعات استقبال الطلبات: يومياً من 7:00 صباحاً إلى 3:00 مساءً.</p>
         <p>&copy; 2026 One Market</p>
       </div>
     </div>
   </footer>
 
-  <script src="js/config.js?v=20260328"></script>
-  <script src="js/utils.js?v=20260328"></script>
   <script src="js/firebase-config.js?v=20260328"></script>
   <script src="js/firebase-service.js?v=20260403"></script>
   <script src="js/firebase-auth.js?v=20260328"></script>
+  <script src="js/config.js?v=20260328"></script>
+  <script src="js/utils.js?v=20260328"></script>
+  <script src="js/unified-prices.js?v=20260404"></script>
   <script type="module" src="js/firebase-bridge.js?v=20260328"></script>
   
   <script>
     // Shop page specific product display logic
     (() => {
       const PRODUCT_IMAGE_MAP = Object.freeze({
-        bell_pepper: 'filfil.png'
+        tomato: 'طماطم.png',
+        white_onion: 'بصل ابيض.png',
+        red_onion: 'بصل احمر.png',
+        cucumber: 'خيار.png',
+        zucchini: 'كوسه.png',
+        potato: 'بطاطس.png',
+        bell_pepper: 'filfil.png',
+        apple: 'تفاح.png',
+        orange: 'برتقال .png',
+        mandarin: 'يوسفي.png',
+        lemon: 'ليمون.png',
+        banana: 'موز.png',
+        strawberry: 'فراوله.png'
       });
 
       const PRODUCT_BADGE_MAP = Object.freeze({
@@ -393,9 +408,10 @@
           const unit = product.unit || 'وحدة';
           const price = product.unitPrice || 0;
           const qty = normalizeQty(quantities[productId] || 0);
-          const imagePath = PRODUCT_IMAGE_MAP[productId];
-          const visual = imagePath
-            ? `<img class="market-product-image" src="${imagePath}" alt="${product.name}" loading="lazy">`
+          // Check for image in priority order: Firebase URL > Local image > Emoji
+          const imageUrl = product.imageUrl || PRODUCT_IMAGE_MAP[productId] || product.image;
+          const visual = imageUrl
+            ? `<img class="market-product-image" src="${imageUrl}" alt="${product.name}" loading="lazy" onerror="this.onerror=null; this.outerHTML='<span class=\'market-product-emoji\' aria-hidden=\'true\'>${product.emoji || '🧺'}</span>';">`
             : `<span class="market-product-emoji" aria-hidden="true">${product.emoji || '🧺'}</span>`;
           const badge = PRODUCT_BADGE_MAP[productId]
             ? `<span class="product-discount-badge">${PRODUCT_BADGE_MAP[productId]}</span>`

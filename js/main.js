@@ -11,12 +11,13 @@
 
 let currentPackage = null;
 let pricesLoaded = false;
-const DELIVERY_AREAS = ['الأقصر المدينة', 'البغدادي', 'الحبيل', 'البياضية'];
+const DELIVERY_AREAS = ['الأقصر المدينة', 'البغدادي', 'الحبيل', 'البياضية', 'مدينة طيبة'];
 const DELIVERY_FEES_BY_AREA = Object.freeze({
-  'الأقصر المدينة': 15,
+  'الأقصر المدينة': 10,
   'الحبيل': 10,
   'البغدادي': 10,
-  'البياضية': 10
+  'البياضية': 10,
+  'مدينة طيبة': 30
 });
 const DELIVERY_AREA_STORAGE_KEY = 'selectedDeliveryArea';
 const API_BASE = (typeof window !== 'undefined' && window.API_BASE_URL)
@@ -494,6 +495,62 @@ function filterItemsWithPrice(items) {
     }
   });
   return cleaned;
+}
+
+/**
+ * Render packages on the main page
+ */
+function renderPackages() {
+  const container = document.getElementById('packagesContainer');
+  if (!container) return;
+
+  const packagesHtml = Object.values(PACKAGES)
+    .map(pkg => {
+      const itemsDisplay = Object.entries(pkg.items)
+        .map(([productId, qty]) => {
+          const product = PRODUCTS[productId];
+          const productName = product?.name || productId;
+          return `
+            <div class="package-item">
+              <span>${productName}</span>
+              <span class="item-qty">${qty} ${product?.unit || 'وحدة'}</span>
+            </div>
+          `;
+        })
+        .join('');
+
+      return `
+        <div class="package-card" data-package="${pkg.id}">
+          <div class="package-card-header">
+            <div class="package-name">${pkg.emoji} ${pkg.name}</div>
+            <div class="package-badge">معيارية</div>
+          </div>
+          
+          <div class="package-items-list">
+            ${itemsDisplay}
+          </div>
+
+          <div class="frequency-selector-inline">
+            <label>التكرار:</label>
+            <select onchange="updateFrequency(this.value)">
+              <option value="${pkg.id}" selected>${pkg.frequency}</option>
+            </select>
+          </div>
+
+          <div class="price-card">
+            <span class="price-label">السعر الإجمالي:</span>
+            <span class="price-value">${recalcPriceFromItems(pkg.items)} جنيه</span>
+          </div>
+
+          <button class="btn-select" onclick="selectPackage('${pkg.id}', this.closest('.package-card'))">
+            اختر هذه الباقة
+          </button>
+        </div>
+      `;
+    })
+    .join('');
+
+  container.innerHTML = packagesHtml;
 }
 
 /**
@@ -1057,6 +1114,10 @@ async function loadOrdersFromFirebase(firebaseService) {
       result = await firebaseService.Orders.getByCustomer(identity);
     } else if (typeof firebaseService.getAllOrders === 'function') {
       result = await firebaseService.getAllOrders();
+      pruneUnavailableQuantities();
+      renderProducts();
+      renderPackages(); // Render packages on main page
+      saveCurrentSelection();
       if (result?.success) {
         result.orders = filterOrdersByCustomerIdentity(result.orders, identity);
       }
@@ -1329,8 +1390,9 @@ function renderCart() {
     })
     .join('');
 
-  // Build frequency options
-  const frequencyOptions = Object.values(PACKAGES)
+  // Build frequency options - only for standard packages, not custom orders
+  const isCustomOrder = currentPackage.name === 'طلب مخصص';
+  const frequencyOptions = isCustomOrder ? '' : Object.values(PACKAGES)
     .map(pkg => {
       const selected = currentPackage.deliveryDays === pkg.deliveryDays ? 'selected' : '';
       return `<option value="${pkg.id}" ${selected}>${pkg.frequency}</option>`;
@@ -1341,19 +1403,21 @@ function renderCart() {
     <div class="package-card">
       <div class="package-card-header">
         <div class="package-name">${currentPackage.emoji} ${currentPackage.name}</div>
-        <div class="package-badge">معيارية</div>
+        <div class="package-badge">${isCustomOrder ? 'مخصص' : 'معيارية'}</div>
       </div>
       
       <div class="package-items-list">
         ${itemsDisplay}
       </div>
 
+      ${!isCustomOrder ? `
       <div class="frequency-selector-inline">
         <label>التكرار:</label>
         <select id="frequencySelect" onchange="updateFrequency(this.value)">
           ${frequencyOptions}
         </select>
       </div>
+      ` : ''}
 
       <div class="frequency-selector-inline">
         <label>منطقة التوصيل:</label>
@@ -1452,7 +1516,9 @@ function renderCheckout() {
     })
     .join('');
 
-  const frequencyOptions = Object.values(PACKAGES)
+  // Build frequency options - only for standard packages, not custom orders
+  const isCustomOrder = currentPackage.name === 'طلب مخصص';
+  const frequencyOptions = isCustomOrder ? '' : Object.values(PACKAGES)
     .map(pkg => {
       const selected = currentPackage.deliveryDays === pkg.deliveryDays ? 'selected' : '';
       return `<option value="${pkg.id}" ${selected}>${pkg.frequency}</option>`;
@@ -1463,15 +1529,17 @@ function renderCheckout() {
     <div class="package-card">
       <div class="package-card-header">
         <div class="package-name">${currentPackage.emoji} ${currentPackage.name}</div>
-        <div class="package-badge">معيارية</div>
+        <div class="package-badge">${isCustomOrder ? 'مخصص' : 'معيارية'}</div>
       </div>
       <div class="package-items-list">${itemsDisplay}</div>
+      ${!isCustomOrder ? `
       <div class="frequency-selector-inline">
         <label>التكرار:</label>
         <select id="frequencySelect" onchange="updateFrequency(this.value); renderCheckout();">
           ${frequencyOptions}
         </select>
       </div>
+      ` : ''}
       <div id="checkoutPriceBreakdown">
         ${buildPriceBreakdownCard(currentPackage.price, 'priceDisplay', selectedDeliveryArea)}
       </div>
@@ -1500,11 +1568,13 @@ function renderCheckout() {
         <label for="address">📍 عنوان التوصيل</label>
         <textarea id="address" name="address" placeholder="اكتب الشارع ورقم البيت بالتفصيل" rows="3" required></textarea>
       </div>
+      ${!isCustomOrder ? `
       <div class="form-group checkbox">
         <label>
           <input type="checkbox" id="recurring" name="recurring"> 🔁 هل تريد تكرار الطلب بشكل منتظم؟
         </label>
       </div>
+      ` : ''}
       <div class="form-title">طريقة الدفع</div>
       <div class="payment-options">
         <label class="payment-option">
@@ -1801,7 +1871,8 @@ async function handleCheckoutSubmit(e) {
   const phone = getElement('phone').value.trim();
   const deliveryArea = getElement('deliveryArea')?.value.trim() || '';
   const address = getElement('address').value.trim();
-  const isRecurring = getElement('recurring')?.checked || false;
+  const isCustomOrder = currentPackage.name === 'طلب مخصص';
+  const isRecurring = !isCustomOrder && (getElement('recurring')?.checked || false);
   if (!validateName(name)) { showErrorMessage(ERROR_MESSAGES.INVALID_NAME); return; }
   if (!validatePhone(phone)) { showErrorMessage(ERROR_MESSAGES.INVALID_PHONE); return; }
   if (!deliveryArea) { showWarningMessage('اختر منطقة التوصيل أولاً'); return; }
@@ -1837,16 +1908,17 @@ async function handleCheckoutSubmit(e) {
     price: totalPrice,
     estimatedReadyMinutes,
     expectedReadyAt,
-    frequency: isRecurring ? currentPackage.frequency : 'مرة واحدة',
+    frequency: isRecurring ? currentPackage.frequency : (isCustomOrder ? 'مرة واحدة' : 'مرة واحدة'),
     packageData: currentPackage,
     paymentMethod: paymentLabel,
     paymentRef,
     vodafoneNumber,
     vodafoneTarget: '01067465207',
-    isRecurring,
+    isRecurring: isRecurring && !isCustomOrder,
     repeatEveryDays,
     nextDate: '',
-    timestamp: Date.now()
+    timestamp: Date.now(),
+    orderType: isCustomOrder ? 'custom' : 'package'
   };
 
   const confirmed = await showConfirmation(buildOrderSummary(orderData, name));
@@ -2177,6 +2249,13 @@ function enhanceVeggieIcons() {
 document.addEventListener('DOMContentLoaded', () => {
   enhanceVeggieIcons();
   initializeApp();
+  
+  // Render packages if we're on the main page
+  if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
+    setTimeout(() => {
+      renderPackages();
+    }, 1000); // Wait a bit for prices to load
+  }
 });
 
 document.addEventListener('prices:updated', () => {
@@ -2189,6 +2268,11 @@ document.addEventListener('prices:updated', () => {
   }
   if (window.location.pathname.includes('checkout.html')) {
     renderCheckout();
+  }
+  
+  // Re-render packages on main page with updated prices
+  if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
+    renderPackages();
   }
 });
 console.log('✅ One Market v1.0 - Script loaded');
