@@ -1,0 +1,226 @@
+﻿/* Admin Control Managers Styles */
+
+.admin-section {
+  margin-bottom: 2rem;
+}
+
+.admin-section__content {
+  padding: 1.5rem;
+}
+
+.admin-section__empty {
+  text-align: center;
+  padding: 2rem;
+  color: var(--adm-muted);
+  font-size: 1.1rem;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.adm-summary-list--cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.875rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.adm-summary-list--cards li {
+  padding: 1rem;
+  border-radius: 14px;
+  background: var(--adm-surface-soft);
+  border: 1px solid var(--adm-border);
+  color: var(--adm-text);
+  font-weight: 600;
+}
+
+.adm-table--prices,
+.adm-table--orders {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.adm-table--prices thead,
+.adm-table--orders thead {
+  background-color: var(--adm-surface-soft);
+  border-bottom: 2px solid var(--adm-border);
+}
+
+.adm-table--prices th,
+.adm-table--orders th {
+  padding: 1rem;
+  text-align: right;
+  font-weight: 600;
+  color: var(--adm-text);
+}
+
+.adm-table--prices td,
+.adm-table--orders td {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--adm-border);
+  text-align: right;
+}
+
+.adm-table--prices tbody tr:hover,
+.adm-table--orders tbody tr:hover {
+  background-color: var(--adm-surface-soft);
+}
+
+.price-input {
+  width: 120px;
+  padding: 0.5rem;
+  border: 1px solid var(--adm-border);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--adm-text);
+  background-color: var(--adm-surface);
+  transition: border-color var(--adm-trans-fast);
+}
+
+.price-input:focus {
+  outline: none;
+  border-color: var(--adm-primary);
+  box-shadow: 0 0 0 3px rgba(15, 143, 101, 0.1);
+}
+
+.status-select {
+  width: 220px;
+  padding: 0.5rem;
+  border: 2px solid var(--adm-border);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--adm-text);
+  background-color: var(--adm-surface);
+  cursor: pointer;
+  transition: border-color var(--adm-trans-fast);
+}
+
+.status-select:focus {
+  outline: none;
+  border-color: var(--adm-primary);
+  box-shadow: 0 0 0 3px rgba(15, 143, 101, 0.1);
+}
+
+.adm-customer-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.adm-customer-badge.is-registered {
+  background: rgba(15, 143, 101, 0.18);
+  color: var(--adm-primary-strong);
+}
+
+.adm-customer-badge.is-guest {
+  background: rgba(246, 177, 0, 0.2);
+  color: #8b6700;
+}
+
+.adm-btn--small {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.adm-btn--danger {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--adm-trans-fast);
+}
+
+.adm-btn--danger:hover {
+  background-color: #c82333;
+}
+
+.order-details {
+  text-align: right;
+  line-height: 1.8;
+}
+
+.order-details h3 {
+  margin-top: 0;
+  color: var(--adm-primary);
+  margin-bottom: 1.5rem;
+}
+
+.order-details h4 {
+  color: var(--adm-primary);
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.order-details ul {
+  list-style-position: inside;
+  margin: 0.5rem 0;
+  padding: 0;
+}
+
+.order-details li {
+  margin-bottom: 0.5rem;
+}
+
+.order-details input[type="text"] {
+  width: 100%;
+  padding: 0.75rem;
+  margin: 1rem 0;
+  border: 1px solid var(--adm-border);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--adm-text);
+  background-color: var(--adm-surface);
+}
+
+.order-details input[type="text"]:focus {
+  outline: none;
+  border-color: var(--adm-primary);
+  box-shadow: 0 0 0 3px rgba(15, 143, 101, 0.1);
+}
+
+@media (max-width: 768px) {
+  .adm-table--prices,
+  .adm-table--orders {
+    font-size: 0.9rem;
+  }
+
+  .adm-table--prices th,
+  .adm-table--orders th,
+  .adm-table--prices td,
+  .adm-table--orders td {
+    padding: 0.625rem 0.5rem;
+  }
+
+  .admin-actions {
+    flex-direction: column;
+  }
+
+  .adm-btn--small,
+  .price-input,
+  .status-select {
+    width: 100%;
+  }
+
+  .price-input {
+    width: 100%;
+  }
+
+  .status-select {
+    width: 100%;
+  }
+}

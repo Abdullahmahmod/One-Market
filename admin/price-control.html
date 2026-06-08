@@ -1,0 +1,1857 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+  <title>إدارة الأسعار - One Market Admin</title>
+  <link rel="icon" type="image/svg+xml" href="../logo.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Cairo", sans-serif;
+      background:
+        radial-gradient(1000px 420px at 10% -10%, rgba(17, 183, 107, 0.12), transparent 60%),
+        radial-gradient(700px 300px at 90% 0%, rgba(212, 162, 74, 0.16), transparent 55%),
+        linear-gradient(180deg, #f9fcfa 0%, #eef7f1 100%);
+      color: #24322c;
+      direction: rtl;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 28px 20px 40px;
+    }
+
+    header {
+      background:
+        radial-gradient(420px 220px at 12% 16%, rgba(212, 162, 74, 0.24), transparent 60%),
+        linear-gradient(135deg, #11b76b 0%, #0d8d54 100%);
+      color: white;
+      padding: 34px 30px;
+      border-radius: 28px;
+      margin-bottom: 30px;
+      box-shadow: 0 24px 48px rgba(8,55,34,0.18);
+      border: 1px solid rgba(255,255,255,0.18);
+      position: relative;
+      overflow: hidden;
+    }
+
+    header h1 {
+      font-size: 2.2rem;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+
+    header p {
+      opacity: 0.94;
+      font-size: 1.04rem;
+      max-width: 520px;
+    }
+
+    header::after {
+      content: "";
+      position: absolute;
+      inset: auto -70px -90px auto;
+      width: 240px;
+      height: 240px;
+      background: radial-gradient(circle, rgba(255,255,255,0.22), transparent 70%);
+    }
+
+    .controls {
+      background: rgba(255,255,255,0.82);
+      padding: 18px;
+      border-radius: 22px;
+      margin-bottom: 30px;
+      box-shadow: 0 18px 36px rgba(15,39,29,0.08);
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      border: 1px solid rgba(255,255,255,0.8);
+      backdrop-filter: blur(14px);
+    }
+
+    .btn {
+      padding: 11px 18px;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: all 0.3s ease;
+      font-family: "Cairo", sans-serif;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.06);
+    }
+
+    .btn-primary {
+      background: #11b76b;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #0e8c54;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(17, 183, 107, 0.3);
+    }
+
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+      border: 1px solid #ddd;
+    }
+
+    .btn-secondary:hover {
+      background: #e8e8e8;
+    }
+
+    .btn-danger {
+      background: #e23f3f;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #c91e1e;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #d9e8de;
+      border-radius: 14px;
+      font-family: "Cairo", sans-serif;
+      background: rgba(255,255,255,0.92);
+    }
+
+    .products-table {
+      background: rgba(255,255,255,0.88);
+      border-radius: 26px;
+      overflow: hidden;
+      box-shadow: 0 20px 42px rgba(15,39,29,0.08);
+      margin-bottom: 30px;
+      border: 1px solid rgba(255,255,255,0.85);
+      backdrop-filter: blur(16px);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      background: linear-gradient(180deg, #f8fbf9, #edf7f1);
+      padding: 18px 15px;
+      text-align: right;
+      font-weight: 700;
+      color: #11b76b;
+      border-bottom: 1px solid #d9ebe1;
+    }
+
+    td {
+      padding: 15px;
+      border-bottom: 1px solid #edf3ef;
+    }
+
+    tr:hover {
+      background: #f8fcf9;
+    }
+
+    .price-input {
+      width: 110px;
+      padding: 10px 12px;
+      border: 1px solid #d7e7dd;
+      border-radius: 12px;
+      font-family: monospace;
+      background: white;
+    }
+
+    .btn-save {
+      padding: 9px 15px;
+      background: #11b76b;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .btn-save:hover {
+      background: #0e8c54;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 7px 13px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .status.active {
+      background: #d4f4dd;
+      color: #0e8c54;
+    }
+
+    .status.inactive {
+      background: #f4d4d4;
+      color: #8c0e0e;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 30px;
+      color: #999;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 30px;
+      height: 30px;
+      border: 3px solid #f0f0f0;
+      border-top-color: #11b76b;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .import-section {
+      background: rgba(255,255,255,0.86);
+      padding: 22px;
+      border-radius: 24px;
+      margin-bottom: 30px;
+      box-shadow: 0 18px 36px rgba(15,39,29,0.08);
+      border: 1px solid rgba(255,255,255,0.85);
+    }
+
+    .import-section h3 {
+      margin-bottom: 15px;
+      color: #11b76b;
+    }
+
+    .import-options {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 15px;
+    }
+
+    .file-input {
+      padding: 16px 18px;
+      border: 2px dashed #11b76b;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #fbfffc, #f2fbf5);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .file-input:hover {
+      background: #f0fff4;
+    }
+
+    .file-input input {
+      display: none;
+    }
+
+    .success-message {
+      background: #d4f4dd;
+      color: #0e8c54;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      border-right: 4px solid #11b76b;
+    }
+
+    .error-message {
+      background: #f4d4d4;
+      color: #8c0e0e;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      border-right: 4px solid #e23f3f;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 18px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(247,251,248,0.92));
+      padding: 22px;
+      border-radius: 22px;
+      box-shadow: 0 18px 34px rgba(15,39,29,0.08);
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.8);
+    }
+
+    .stat-card .value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #11b76b;
+      margin: 10px 0;
+    }
+
+    .stat-card .label {
+      color: #999;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 768px) {
+      table {
+        font-size: 0.9rem;
+      }
+
+      th, td {
+        padding: 10px;
+      }
+
+      .price-input {
+        width: 80px;
+      }
+
+      header h1 {
+        font-size: 1.5rem;
+      }
+
+      .controls {
+        flex-direction: column;
+      }
+
+      .search-box {
+        min-width: auto;
+      }
+
+      .categories-grid {
+        grid-template-columns: 1fr !important;
+      }
+    }
+
+    /* Category Management Styles */
+    .category-section {
+      background: rgba(255,255,255,0.86);
+      padding: 22px;
+      border-radius: 24px;
+      margin-bottom: 30px;
+      box-shadow: 0 18px 36px rgba(15,39,29,0.08);
+      border: 1px solid rgba(255,255,255,0.85);
+    }
+
+    .category-section h3 {
+      color: #11b76b;
+      margin-bottom: 15px;
+      font-size: 1.1rem;
+    }
+
+    .categories-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 18px;
+      margin-bottom: 15px;
+    }
+
+    .category-card {
+      background: linear-gradient(180deg, #fbfdfb, #f2f8f4);
+      border: 1px solid #d8e9de;
+      border-radius: 18px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      user-select: none;
+      box-shadow: 0 10px 20px rgba(17,183,107,0.05);
+    }
+
+    .category-card:hover {
+      border-color: #11b76b;
+      box-shadow: 0 12px 22px rgba(17, 183, 107, 0.12);
+    }
+
+    .category-card.active {
+      background: #d4f4dd;
+      border-color: #11b76b;
+    }
+
+    .category-card.inactive {
+      opacity: 0.6;
+      background: #fafafa;
+      cursor: not-allowed;
+    }
+
+    .category-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .category-toggle input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      accent-color: #11b76b;
+    }
+
+    .category-toggle label {
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      margin: 0;
+    }
+
+    .category-count {
+      font-size: 0.9rem;
+      color: #666;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #ddd;
+    }
+
+    .category-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🏪 إدارة أسعار المنتجات</h1>
+      <p>تحديث الأسعار مباشرة في Firebase</p>
+    </header>
+
+    <div class="stats" id="statsContainer"></div>
+
+    <div class="import-section">
+      <h3>📤 استيراد الأسعار</h3>
+      <div class="import-options">
+        <button class="btn btn-primary" onclick="importFromJSON()">📋 استيراد من JSON</button>
+        <button class="btn btn-primary" onclick="importFromCSV()">📊 استيراد من CSV</button>
+        <button class="btn btn-secondary" onclick="exportAsJSON()">💾 تصدير JSON</button>
+      </div>
+      <div id="importMessage"></div>
+      <div class="file-input" onclick="document.getElementById('jsonFile').click()">
+        <input type="file" id="jsonFile" accept=".json">
+        <span>👆 اختر ملف JSON أو CSV</span>
+      </div>
+    </div>
+
+    <!-- Category Management Section -->
+    <div class="category-section">
+      <h3>📂 إدارة الأصناف</h3>
+      <div class="categories-grid" id="categoriesGrid"></div>
+      <div class="category-actions">
+        <button class="btn btn-primary" onclick="enableAllCategories()">✅ تفعيل الكل</button>
+        <button class="btn btn-secondary" onclick="disableAllCategories()">❌ تعطيل الكل</button>
+        <button class="btn btn-primary" onclick="saveCategorySettings()">💾 حفظ الإعدادات</button>
+      </div>
+    </div>
+
+    <style>
+      .new-product-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+      }
+
+      .new-product-grid input,
+      .new-product-grid select {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 1rem;
+      }
+
+      .new-product-grid input[type="text"]#newProductEmoji {
+        font-size: 1.2rem;
+      }
+      .new-product-button {
+        width: 100%;
+      }
+
+      /* 🖼️ Image Upload Styles */
+      .image-upload-container {
+        grid-column: 1 / -1;
+        border: 2px dashed #ddd;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        background: #fafafa;
+        transition: all 0.3s ease;
+        margin-top: 10px;
+      }
+
+      .image-upload-container:hover {
+        border-color: #11b76b;
+        background: #f0f9f4;
+      }
+
+      .image-preview {
+        margin-bottom: 15px;
+      }
+
+      .image-preview img {
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        max-width: 200px;
+        max-height: 200px;
+        object-fit: cover;
+      }
+
+      .btn-remove-img {
+        display: block;
+        margin: 10px auto 0;
+        padding: 8px 16px;
+        background: #ff4757;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: inherit;
+      }
+
+      .btn-remove-img:hover {
+        background: #ff3838;
+      }
+
+      .upload-options {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .btn-upload-img {
+        padding: 12px 24px;
+        background: #11b76b;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        font-family: inherit;
+        transition: all 0.3s ease;
+      }
+
+      .btn-upload-img:hover {
+        background: #0ea05d;
+        transform: translateY(-2px);
+      }
+
+      .or-divider {
+        color: #999;
+        font-size: 14px;
+        position: relative;
+        width: 100%;
+        text-align: center;
+      }
+
+      .or-divider::before,
+      .or-divider::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        width: 40%;
+        height: 1px;
+        background: #ddd;
+      }
+
+      .or-divider::before { left: 0; }
+      .or-divider::after { right: 0; }
+
+      .url-input-group {
+        display: flex;
+        gap: 10px;
+        width: 100%;
+        max-width: 500px;
+      }
+
+      .url-input-group input {
+        flex: 1;
+        padding: 10px 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-family: inherit;
+      }
+
+      .btn-use-url {
+        padding: 10px 20px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-family: inherit;
+        font-weight: 600;
+      }
+
+      .btn-use-url:hover {
+        background: #2980b9;
+      }
+
+      .upload-status {
+        padding: 15px;
+        background: #f0f9f4;
+        border-radius: 8px;
+        color: #11b76b;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .upload-status .spinner {
+        width: 20px;
+        height: 20px;
+        border: 2px solid #11b76b;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .image-cell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .product-thumb {
+        width: 40px;
+        height: 40px;
+        border-radius: 6px;
+        object-fit: cover;
+        border: 1px solid #ddd;
+      }
+    </style>
+
+    <div class="import-section">
+      <h3>➕ إضافة منتج جديد</h3>
+      <div class="new-product-grid">
+        <input type="text" id="newProductId" placeholder="معرّف المنتج (مثل: tomato)">
+        <input type="text" id="newProductName" placeholder="اسم المنتج (مثل: طماطم)">
+        <input type="text" id="newProductEmoji" placeholder="الرمز (مثل: 🍅)">
+        <input type="number" id="newProductPrice" placeholder="السعر" min="0" step="0.01">
+        <select id="newProductUnit" title="اختر وحدة القياس">
+          <option value="">-- اختر وحدة --</option>
+          <option value="كجم">كجم (وزن)</option>
+          <option value="حبة">حبة (عدد)</option>
+          <option value="حزمة">حزمة</option>
+          <option value="وحدة">وحدة</option>
+        </select>
+
+        <!-- 🖼️ صورة المنتج - Cloudinary -->
+        <div class="image-upload-container" style="background: linear-gradient(135deg, #f8f4ff 0%, #f0e6ff 100%); border-color: #d4a2ff;">
+          <label style="display:block; margin-bottom:10px; font-weight:600; color:#6b46c1;">
+            🖼️ صورة المنتج (Cloudinary):
+          </label>
+
+          <!-- Preview Container -->
+          <div id="imagePreviewContainer" class="image-preview" style="display:none;">
+            <img id="previewImg" src="" alt="Product Preview">
+            <button type="button" onclick="removeProductImage()" class="btn-remove-img">🗑️ حذف الصورة</button>
+          </div>
+
+          <!-- URL Input Only -->
+          <div id="uploadOptions" class="upload-options">
+            <div style="background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e0d4ff;">
+              <p style="color: #666; font-size: 0.95em; margin-bottom: 10px; text-align: right;">
+                💡 <strong>استخدم Cloudinary لرفع الصور:</strong><br>
+                1. اذهب إلى <a href="https://cloudinary.com" target="_blank" style="color: #6b46c1;">cloudinary.com</a> (مجاني)<br>
+                2. أنشئ حساب وارفع صورتك<br>
+                3. انسخ رابط الصورة والصقه هنا
+              </p>
+            </div>
+
+            <div class="url-input-group">
+              <input type="url" id="productImageUrlInput" placeholder="📎 الصق رابط Cloudinary هنا...">
+              <button type="button" onclick="useImageUrl()" class="btn-use-url" style="background: #6b46c1;">استخدام</button>
+            </div>
+          </div>
+
+          <!-- Hidden fields for storing image data -->
+          <input type="hidden" id="newProductImageUrl" value="">
+          <input type="hidden" id="newProductImagePath" value="">
+        </div>
+
+        <button class="btn btn-primary new-product-button" onclick="addNewProduct()">➕ إضافة المنتج</button>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="🔍 ابحث عن منتج...">
+      </div>
+      <button class="btn btn-primary" onclick="saveAllPrices()">💾 حفظ جميع التغييرات</button>
+      <button class="btn btn-secondary" onclick="reloadPrices()">🔄 إعادة تحميل</button>
+      <button class="btn btn-danger" onclick="resetToDefaults()">⚠️ إعادة تعيين</button>
+    </div>
+
+    <div class="products-table">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 60px;">الصورة</th>
+            <th>اسم المنتج</th>
+            <th>الوحدة</th>
+            <th>السعر الحالي</th>
+            <th>السعر الجديد</th>
+            <th>الحالة</th>
+            <th>الإجراء</th>
+          </tr>
+        </thead>
+        <tbody id="productsTableBody">
+          <tr>
+            <td colspan="7" class="loading">
+              <div class="spinner"></div>
+              <p>جاري التحميل...</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Firebase Config and Scripts -->
+  <script src="../js/config.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/firebase-config.js" defer></script>
+  <script src="../js/firebase-service.js" defer></script>
+  <script src="../js/firebase-auth.js" defer></script>
+  <script src="../js/firebase-bridge.js" defer></script>
+  <!-- Admin Authentication (Must be before other scripts) -->
+  <script src="admin-auth.js"></script>
+
+  <script>
+    // Check admin authentication first
+    if (typeof adminAuth === 'undefined') {
+      console.error('❌ Admin authentication not loaded');
+      window.location.href = '../index.html';
+    }
+
+    let pricesData = {};
+    let productsRef = null;
+    let loadingProducts = false;
+
+    // Initialize Firebase-based price management
+    function initializePriceControl() {
+      loadingProducts = true;
+      console.log('🔄 جاري تحميل المنتجات...');
+      
+      // First load base products from window.PRODUCTS (loaded from config.js)
+      if (!window.PRODUCTS || typeof window.PRODUCTS !== 'object') {
+        console.warn('⚠️ PRODUCTS not loaded from config.js');
+      }
+      
+      // Load prices from Firebase
+      loadPricesFromFirebase();
+    }
+
+    async function loadPricesFromFirebase() {
+      try {
+        if (!window.firebaseDB) {
+          console.warn('Firebase not available, using localStorage only');
+          loadPricesFromStorage();
+          return;
+        }
+
+        // Load all products from Firebase
+        const productsSnapshot = await window.firebaseDB.ref('products').once('value');
+        const firebaseProducts = productsSnapshot.val() || {};
+        
+        // Load custom products from Firebase
+        const customProductsSnapshot = await window.firebaseDB.ref('customProducts').once('value');
+        const firebaseCustomProducts = customProductsSnapshot.val() || {};
+        
+        // Merge Firebase products with base PRODUCTS
+        Object.entries(firebaseProducts).forEach(([id, product]) => {
+          if (product && typeof product === 'object') {
+            PRODUCTS[id] = {
+              ...PRODUCTS[id],
+              ...product
+            };
+            if (product.unitPrice > 0) {
+              pricesData[id] = product.unitPrice;
+            }
+          }
+        });
+
+        // Merge Firebase custom products
+        Object.entries(firebaseCustomProducts).forEach(([id, product]) => {
+          if (product && typeof product === 'object') {
+            PRODUCTS[id] = product;
+            if (product.unitPrice > 0) {
+              pricesData[id] = product.unitPrice;
+            }
+          }
+        });
+
+        // Load custom products from localStorage (for backup)
+        loadCustomProductsFromLocalStorage();
+        
+        console.log('Loaded products from Firebase successfully');
+        renderPricesTable();
+        loadingProducts = false;
+      } catch (err) {
+        console.warn('Failed to load from Firebase:', err);
+        loadPricesFromStorage();
+      }
+    }
+
+    function loadPricesFromStorage() {
+      const stored = localStorage.getItem('productPrices');
+      pricesData = stored ? JSON.parse(stored) : {};
+      
+      // Load custom products from localStorage
+      loadCustomProductsFromLocalStorage();
+      renderPricesTable();
+      loadingProducts = false;
+    }
+
+    function loadCustomProductsFromLocalStorage() {
+      const customProducts = localStorage.getItem('customProducts');
+      if (customProducts) {
+        try {
+          const custom = JSON.parse(customProducts);
+          Object.entries(custom).forEach(([id, product]) => {
+            PRODUCTS[id] = product;
+            if (Number(product.unitPrice) > 0) {
+              pricesData[id] = Number(product.unitPrice);
+            }
+          });
+          console.log(`✅ تم تحميل ${Object.keys(custom).length} منتج مخصص من localStorage`);
+        } catch (err) {
+          console.warn('Failed to parse custom products from localStorage:', err);
+        }
+      }
+    }
+
+    function renderPricesTable() {
+      const tbody = document.getElementById('productsTableBody');
+      if (!tbody) return;
+      
+      const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
+
+      // Ensure PRODUCTS exists
+      if (!window.PRODUCTS || typeof window.PRODUCTS !== 'object') {
+        console.error('❌ PRODUCTS not available');
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: red;">❌ خطأ: لم يتم تحميل المنتجات</td></tr>';
+        return;
+      }
+
+      // Filter products based on search
+      const products = Object.entries(PRODUCTS).filter(([id, product]) => {
+        if (!product || typeof product !== 'object') return false;
+        const productName = product.name || '';
+        const productId = id || '';
+        return productName.includes(searchTerm) || productId.includes(searchTerm);
+      });
+
+      if (products.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">⚠️ لا توجد منتجات متطابقة</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = products.map(([id, product]) => {
+        try {
+          const currentPrice = product.unitPrice || pricesData[id] || 0;
+          const inputValue = document.getElementById(`price_${id}`)?.value;
+          const newPrice = inputValue !== undefined ? inputValue : currentPrice;
+          const isCustom = JSON.parse(localStorage.getItem('customProducts') || '{}')[id];
+          
+          // Check if active: price > 0 AND isActive !== false
+          const priceValue = parseFloat(newPrice) || 0;
+          const explicitlyActive = product.isActive !== false;
+          const isActive = (priceValue > 0) && explicitlyActive;
+          
+          const emoji = product.emoji || '×';
+          const name = product.name || 'Product';
+          const unit = product.unit || 'unit';
+          const imageUrl = product.imageUrl || product.image;
+          
+          // Image or emoji display - filter out local files that don't exist
+          let visualCell = `<span style="font-size: 1.5em;">${emoji}</span>`;
+          if (imageUrl) {
+            if (imageUrl.startsWith('http')) {
+              // External URL - use with fallback
+              visualCell = `<img src="${imageUrl}" alt="${name}" class="product-thumb" onerror="this.onerror=null; this.outerHTML='<span style=\\'font-size: 1.5em;\\'>${emoji}</span>';">`;
+            } else if (imageUrl.startsWith('data:')) {
+              // Data URL - use directly
+              visualCell = `<img src="${imageUrl}" alt="${name}" class="product-thumb">`;
+            }
+            // Skip local file paths that don't exist
+          }
+          
+          return `
+            <tr style="${isActive ? '' : 'opacity: 0.65; background-color: #f5f5f5;'}">
+              <td class="image-cell">${visualCell}</td>
+              <td><strong>${name}</strong></td>
+              <td>${unit}</td>
+              <td style="color: #999; font-size: 0.9em;">${currentPrice} ج.م</td>
+              <td>
+                <input 
+                  type="number" 
+                  id="price_${id}" 
+                  class="price-input" 
+                  value="${currentPrice}" 
+                  step="0.01" 
+                  min="0"
+                  style="width: 90px; padding: 6px; border: 1px solid #ddd; border-radius: 4px;"
+                  onchange="updatePrice('${id}', this.value); renderPricesTable();"
+                >
+              </td>
+              <td>
+                <span class="status ${isActive ? 'active' : 'inactive'}" style="padding: 4px 8px; border-radius: 4px; font-size: 0.85em;">
+                  ${isActive ? '✅ نشط' : '⏸️ معطّل'}
+                </span>
+              </td>
+              <td>
+                <button class="btn-save" onclick="savePrice('${id}')" style="padding: 6px 10px; font-size: 0.9em;">💾 حفظ</button>
+                ${isCustom ? `<button class="btn-save" style="background: #e23f3f; margin-right: 5px; padding: 6px 10px; font-size: 0.9em;" onclick="if(confirm('حذف ${name}؟')) deleteProduct('${id}')">🗑️ حذف</button>` : ''}
+              </td>
+            </tr>
+          `;
+        } catch (err) {
+          console.warn(`Error rendering product ${id}:`, err);
+          return '';
+        }
+      }).join('');
+
+      // Update stats
+      const activeCount = products.filter(([id, product]) => {
+        try {
+          const livePrice = document.getElementById(`price_${id}`)?.value;
+          const effectivePrice = parseFloat(livePrice || product.unitPrice || pricesData[id] || 0) || 0;
+          const explicitlyActive = product.isActive !== false;
+          return (effectivePrice > 0) && explicitlyActive;
+        } catch {
+          return false;
+        }
+      }).length;
+
+      updateStats(products.length, activeCount);
+    }
+
+    function updatePrice(productId, value) {
+      pricesData[productId] = parseFloat(value) || 0;
+    }
+
+    async function savePrice(productId) {
+      const price = pricesData[productId];
+      const product = PRODUCTS[productId];
+      
+      if (!price || price <= 0) {
+        // Market as inactive
+        pricesData[productId] = 0;
+        if (product) {
+          product.isActive = false;
+        }
+      } else {
+        // Market as active
+        if (product) {
+          product.isActive = true;
+        }
+      }
+
+      // Save to localStorage
+      localStorage.setItem('productPrices', JSON.stringify(pricesData));
+      
+      // Update customProducts in localStorage with isActive flag
+      const customProducts = JSON.parse(localStorage.getItem('customProducts') || '{}');
+      if (customProducts[productId]) {
+        customProducts[productId].isActive = product?.isActive !== false;
+        customProducts[productId].unitPrice = price || 0;
+      }
+      localStorage.setItem('customProducts', JSON.stringify(customProducts));
+
+      // Try to save to Firebase
+      if (window.firebaseDB) {
+        try {
+          // Update products collection
+          const updates = {
+            [`products/${productId}/unitPrice`]: price || 0,
+            [`products/${productId}/isActive`]: product?.isActive !== false,
+            [`products/${productId}/updatedAt`]: new Date().toISOString()
+          };
+          
+          // Also update customProducts if it's a custom product
+          if (JSON.parse(localStorage.getItem('customProducts') || '{}')[productId]) {
+            updates[`customProducts/${productId}/unitPrice`] = price || 0;
+            updates[`customProducts/${productId}/isActive`] = product?.isActive !== false;
+            updates[`customProducts/${productId}/updatedAt`] = new Date().toISOString();
+          }
+          
+          await window.firebaseDB.ref('/').update(updates);
+          localStorage.setItem('lastSyncTime', new Date().toISOString());
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'تم الحفظ',
+            text: `تم حفظ سعر المنتج: ${price} ج.م في Firebase`,
+            timer: 2000
+          });
+        } catch (err) {
+          console.warn('Failed to save to Firebase:', err);
+          Swal.fire({
+            icon: 'warning',
+            title: 'تم الحفظ محلياً',
+            text: `تم الحفظ في هذا الجهاز فقط (${err.message})`,
+            timer: 2000
+          });
+        }
+      } else {
+        Swal.fire({
+          icon: 'success',
+          title: 'تم الحفظ محلياً',
+          text: `تم حفظ السعر: ${price} ج.م`,
+          timer: 2000
+        });
+      }
+      
+      renderPricesTable();
+    }
+
+    async function saveAllPrices() {
+      // Validate prices
+      if (!pricesData || Object.keys(pricesData).length === 0) {
+        Swal.fire({
+          icon: 'error',
+          title: 'لا توجد أسعار',
+          text: 'لم يتم إدخال أي أسعار للحفظ'
+        });
+        return;
+      }
+
+      // Always save to localStorage as backup
+      localStorage.setItem('productPrices', JSON.stringify(pricesData));
+
+      // Try to save to Firebase if available
+      if (window.FirebaseBridge && window.FirebaseBridge.isEnabled?.()) {
+        try {
+          console.log('💾 جاري حفظ الأسعار في Firebase...');
+          
+          // Get the Firebase service from the bridge
+          const firebaseService = window.FirebaseBridge.service;
+          if (!firebaseService) {
+            throw new Error('Firebase service not available');
+          }
+
+          // Check if savePrices method exists
+          if (typeof firebaseService.savePrices !== 'function') {
+            throw new Error('Firebase savePrices method not available');
+          }
+
+          // Call the new savePrices method
+          const result = await firebaseService.savePrices(pricesData);
+          
+          if (result?.success) {
+            // Mark sync time
+            localStorage.setItem('pricesSyncedToFirebase', new Date().toISOString());
+            
+            Swal.fire({
+              icon: 'success',
+              title: '✅ تم الحفظ بنجاح',
+              text: `تم حفظ الأسعار في Firebase!\n${result.pricesSaved || 0} منتج تم تحديثه`,
+              timer: 3000
+            });
+            console.log('✅ تم حفظ الأسعار في Firebase:', result);
+          } else {
+            throw new Error(result?.error || 'Failed to save prices to Firebase');
+          }
+        } catch (err) {
+          console.error('❌ فشل حفظ الأسعار في Firebase:', err.message);
+          Swal.fire({
+            icon: 'warning',
+            title: '⚠️ تم الحفظ محلياً فقط',
+            html: `تم حفظ الأسعار في هذا الجهاز<br><small>${err.message}</small>`,
+            timer: 3000
+          });
+        }
+      } else {
+        Swal.fire({
+          icon: 'info',
+          title: 'ℹ️ تم الحفظ محلياً',
+          text: 'Firebase غير متاح حالياً. سيتم الحفظ في الجهاز فقط.',
+          timer: 2000
+        });
+      }
+    }
+
+    function reloadPrices() {
+      pricesData = {};
+      initializePriceControl();
+      Swal.fire({
+        icon: 'info',
+        title: 'تم الإعادة',
+        text: 'تم إعادة تحميل الأسعار',
+        timer: 2000
+      });
+    }
+
+    async function resetToDefaults() {
+      // Show confirmation with detailed info
+      const confirmed = await Swal.fire({
+        icon: 'warning',
+        title: '⚠️ إعادة تعيين شاملة',
+        html: `<div style="text-align: right; direction: rtl; color: #333;">
+          <p><strong>هذا سيؤدي إلى:</strong></p>
+          <ul style="text-align: right;">
+            <li>❌ حذف <strong>جميع المنتجات المخصصة</strong></li>
+            <li>❌ حذف <strong>جميع تعديلات الأسعار</strong></li>
+            <li>❌ حذف <strong>كل البيانات المحلية</strong></li>
+            <li>✅ الاحتفاظ بالمنتجات الأساسية فقط</li>
+          </ul>
+          <p><strong style="color: red;">هل أنت متأكد تماماً؟</strong></p>
+        </div>`,
+        showCancelButton: true,
+        confirmButtonText: 'نعم، احذف كل شيء',
+        confirmButtonColor: '#e23f3f',
+        cancelButtonText: 'إلغاء'
+      });
+
+      if (!confirmed.isConfirmed) {
+        return;
+      }
+
+      try {
+        Swal.showLoading();
+
+        // Clear all localStorage data
+        localStorage.removeItem('productPrices');
+        localStorage.removeItem('customProducts');
+        localStorage.removeItem('categorySettings');
+        localStorage.removeItem('lastSyncTime');
+        console.log('✅ تم مسح localStorage');
+
+        // Reset pricesData
+        pricesData = {};
+
+        // Reset PRODUCTS to base products only (from config.js)
+        // This will be reloaded from config.js when page reloads
+        
+        // Try to delete from Firebase
+        if (window.firebaseDB) {
+          try {
+            // Delete all custom products from Firebase
+            const customRef = window.firebaseDB.ref('customProducts');
+            await customRef.remove();
+            console.log('✅ تم حذف المنتجات المخصصة من Firebase');
+
+            // Reset prices to null for all products
+            const productsRef = window.firebaseDB.ref('products');
+            const snapshot = await productsRef.once('value');
+            const products = snapshot.val() || {};
+            
+            const updates = {};
+            Object.keys(products).forEach(id => {
+              updates[`products/${id}/unitPrice`] = null;
+              updates[`products/${id}/isActive`] = null;
+              updates[`products/${id}/updatedAt`] = new Date().toISOString();
+            });
+            
+            if (Object.keys(updates).length > 0) {
+              await window.firebaseDB.ref('/').update(updates);
+              console.log('✅ تم إعادة تعيين جميع الأسعار في Firebase');
+            }
+          } catch (err) {
+            console.warn('⚠️ خطأ في حذف من Firebase:', err);
+          }
+        }
+
+        // Wait a moment and then reload
+        setTimeout(() => {
+          Swal.fire({
+            icon: 'success',
+            title: '✅ تم الإعادة بنجاح',
+            html: '<div style="text-align: right; direction: rtl;">سيتم إعادة تحميل الصفحة الآن...</div>',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didClose: () => {
+              window.location.reload();
+            }
+          });
+          
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        }, 500);
+      } catch (err) {
+        console.error('❌ خطأ في إعادة التعيين:', err);
+        Swal.fire({
+          icon: 'error',
+          title: 'خطأ في الإعادة',
+          text: err.message || 'حدث خطأ غير معروف'
+        });
+      }
+    }
+
+    // ==========================================
+    // 🖼️ دالة معالجة رفع الصور
+    // ==========================================
+
+    let currentImageFile = null;
+
+    /**
+     * معالجة اختيار ملف الصورة
+     */
+    async function handleImageFileSelect(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      // التحقق من نوع الملف
+      if (!file.type.startsWith('image/')) {
+        Swal.fire({
+          icon: 'error',
+          title: 'خطأ',
+          text: 'يرجى اختيار ملف صورة فقط (PNG, JPG, JPEG)'
+        });
+        return;
+      }
+
+      // التحقق من حجم الملف (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        Swal.fire({
+          icon: 'error',
+          title: 'حجم كبير',
+          text: 'حجم الصورة كبير جداً. الحد الأقصى 2 ميجابايت'
+        });
+        return;
+      }
+
+      currentImageFile = file;
+
+      // عرض معاينة مؤقتة
+      const previewUrl = URL.createObjectURL(file);
+      showImagePreview(previewUrl, false);
+
+      // رفع الصورة إلى Firebase
+      await uploadImageToFirebase(file);
+    }
+
+    /**
+     * رفع الصورة إلى Firebase Storage
+     */
+    async function uploadImageToFirebase(file) {
+      const productId = document.getElementById('newProductId').value.trim();
+      if (!productId) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'تنبيه',
+          text: 'يرجى إدخال معرف المنتج (Product ID) أولاً قبل رفع الصورة'
+        });
+        return;
+      }
+
+      // عرض حالة الرفع
+      document.getElementById('uploadStatus').style.display = 'flex';
+      document.getElementById('uploadOptions').style.display = 'none';
+
+      try {
+        // استخدام Firebase Storage مباشرة
+        const storageRef = firebase.storage().ref(`products/${productId}/${Date.now()}_${file.name}`);
+        const snapshot = await storageRef.put(file);
+        const downloadUrl = await snapshot.ref.getDownloadURL();
+        const fullPath = snapshot.ref.fullPath;
+
+        // حفظ بيانات الصورة في الحقول المخفية
+        document.getElementById('newProductImageUrl').value = downloadUrl;
+        document.getElementById('newProductImagePath').value = fullPath;
+
+        // عرض الصورة النهائية
+        showImagePreview(downloadUrl, true);
+
+        Swal.fire({
+          icon: 'success',
+          title: 'تم الرفع',
+          text: 'تم رفع الصورة بنجاح!',
+          timer: 2000
+        });
+
+        console.log('📤 Image uploaded:', { url: downloadUrl, path: fullPath });
+      } catch (error) {
+        console.error('Upload error:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'فشل الرفع',
+          text: 'خطأ في رفع الصورة: ' + error.message
+        });
+        removeProductImage();
+      } finally {
+        document.getElementById('uploadStatus').style.display = 'none';
+      }
+    }
+
+    /**
+     * استخدام رابط URL مباشر
+     */
+    function useImageUrl() {
+      const urlInput = document.getElementById('productImageUrlInput');
+      const url = urlInput.value.trim();
+
+      if (!url) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'تنبيه',
+          text: 'يرجى إدخال رابط الصورة'
+        });
+        return;
+      }
+
+      // التحقق من صحة الرابط
+      try {
+        new URL(url);
+      } catch (_) {
+        Swal.fire({
+          icon: 'error',
+          title: 'رابط غير صالح',
+          text: 'الرابط المدخل غير صحيح'
+        });
+        return;
+      }
+
+      document.getElementById('newProductImageUrl').value = url;
+      document.getElementById('newProductImagePath').value = '';
+
+      showImagePreview(url, true);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'تم',
+        text: 'تم استخدام رابط الصورة',
+        timer: 1500
+      });
+    }
+
+    /**
+     * عرض معاينة الصورة
+     */
+    function showImagePreview(url, isFinal) {
+      const previewContainer = document.getElementById('imagePreviewContainer');
+      const previewImg = document.getElementById('previewImg');
+      const uploadOptions = document.getElementById('uploadOptions');
+
+      previewImg.src = url;
+      previewContainer.style.display = 'block';
+
+      if (isFinal) {
+        uploadOptions.style.display = 'none';
+      }
+    }
+
+    /**
+     * حذف الصورة
+     */
+    async function removeProductImage() {
+      const imagePath = document.getElementById('newProductImagePath').value;
+
+      // إذا كانت الصورة على Firebase، احذفها
+      if (imagePath) {
+        try {
+          const storageRef = firebase.storage().ref(imagePath);
+          await storageRef.delete();
+          console.log('🗑️ Image deleted from Firebase:', imagePath);
+        } catch (error) {
+          console.warn('Could not delete image:', error);
+        }
+      }
+
+      // إعادة تعيين الحقول
+      document.getElementById('newProductImageUrl').value = '';
+      document.getElementById('newProductImagePath').value = '';
+      document.getElementById('productImageUrlInput').value = '';
+      document.getElementById('productImageFile').value = '';
+
+      // إخفاء المعاينة وإظهار خيارات الرفع
+      document.getElementById('imagePreviewContainer').style.display = 'none';
+      document.getElementById('uploadOptions').style.display = 'flex';
+
+      currentImageFile = null;
+    }
+
+    async function addNewProduct() {
+      const id = document.getElementById('newProductId').value.trim().toLowerCase().replace(/\s+/g, '_');
+      const name = document.getElementById('newProductName').value.trim();
+      const emoji = document.getElementById('newProductEmoji').value.trim();
+      const price = parseFloat(document.getElementById('newProductPrice').value);
+      const unit = document.getElementById('newProductUnit').value;
+      const imageUrl = document.getElementById('newProductImageUrl').value;
+      const imagePath = document.getElementById('newProductImagePath').value;
+
+      // Validation
+      if (!id || !name || !emoji || isNaN(price) || price <= 0 || !unit) {
+        Swal.fire({
+          icon: 'error',
+          title: 'خطأ في البيانات',
+          html: '<div style="text-align: right; direction: rtl;">تأكد من ملء جميع الحقول:<br>✓ معرّف المنتج<br>✓ اسم المنتج<br>✓ الرمز (Emoji)<br>✓ السعر (> 0)<br>✓ وحدة القياس</div>'
+        });
+        return;
+      }
+
+      // Check if product already exists
+      if (PRODUCTS[id]) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'المنتج موجود',
+          text: `هذا المعرّف (${id}) موجود بالفعل! استخدم معرّفاً مختلفاً`
+        });
+        return;
+      }
+
+      // Create product object with timestamps
+      const productData = {
+        label: `${emoji} ${name}`,
+        emoji: emoji,
+        name: name,
+        unit: unit,
+        unitPrice: price,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        // Add image data if exists
+        ...(imageUrl && { imageUrl: imageUrl }),
+        ...(imagePath && { imagePath: imagePath })
+      }; // <--- Added closing brace here
+
+      try {
+        // Add to PRODUCTS object
+        PRODUCTS[id] = productData;
+        console.log(`Added ${name} to PRODUCTS`);
+
+        // Save to localStorage first (immediate)
+        const localCustomProducts = JSON.parse(localStorage.getItem('customProducts') || '{}');
+        localCustomProducts[id] = productData;
+        localStorage.setItem('customProducts', JSON.stringify(localCustomProducts));
+        // ...
+console.log(`Saved ${name} to localStorage`);
+
+// Save price to pricesData
+pricesData[id] = price;
+localStorage.setItem('productPrices', JSON.stringify(pricesData));
+
+// Try to save to Firebase (async)
+if (window.firebaseDB) {
+try {
+// Create multi-path update for atomicity
+const updates = {};
+updates[`customProducts/${id}`] = productData;
+updates[`products/${id}`] = productData;
+await window.firebaseDB.ref('/').update(updates);
+console.log(`Saved ${name} to Firebase`);
+localStorage.setItem('lastSyncTime', new Date().toISOString());
+} catch (firebaseErr) {
+console.warn('Failed to sync to Firebase:', firebaseErr);
+}
+}
+
+// Clear form
+document.getElementById('newProductId').value = '';
+document.getElementById('newProductName').value = '';
+document.getElementById('newProductEmoji').value = '';
+document.getElementById('newProductPrice').value = '';
+document.getElementById('newProductUnit').value = '';
+document.getElementById('newProductImageUrl').value = '';
+document.getElementById('newProductImagePath').value = '';
+document.getElementById('imagePreviewContainer').style.display = 'none';
+
+// Refresh table
+renderPricesTable();
+
+Swal.fire({
+icon: 'success',
+title: 'Product added',
+text: `${name} has been added successfully`,
+timer: 2000
+});
+} catch (err) {
+console.error('Error adding product:', err);
+Swal.fire({
+icon: 'error',
+title: 'Error',
+text: 'Failed to add product: ' + err.message
+});
+}
+}
+
+function importFromJSON() {
+document.getElementById('jsonFile').click();
+}
+
+function importFromCSV() {
+document.getElementById('jsonFile').click();
+}
+
+function exportAsJSON() {
+const dataStr = JSON.stringify(pricesData, null, 2);
+const dataBlob = new Blob([dataStr], { type: 'application/json' });
+const url = URL.createObjectURL(dataBlob);
+const link = document.createElement('a');
+link.href = url;
+link.download = 'prices_' + new Date().toISOString().split('T')[0] + '.json';
+link.click();
+}
+
+function updateStats(productCount, activeCount) {
+const statsContainer = document.getElementById('statsContainer');
+if (!statsContainer) {
+// Create stats container if it doesn't exist
+const header = document.querySelector('header');
+if (header) {
+const container = document.createElement('div');
+container.id = 'statsContainer';
+container.className = 'stats';
+header.appendChild(container);
+}
+return;
+}
+
+const firebaseEnabled = window.firebaseDB ? '✅ متصل' : '❌ غير متصل';
+const customProductsCount = Object.keys(JSON.parse(localStorage.getItem('customProducts') || '{}')).length;
+statsContainer.innerHTML = `
+<div class="stat-card">
+<div class="label">إجمالي المنتجات</div>
+<div class="value">${productCount}</div>
+</div>
+<div class="stat-card">
+<div class="label">المنتجات المفعلة</div>
+<div class="value" style="color: green;">${activeCount || 0}</div>
+</div>
+<div class="stat-card">
+<div class="label">المنتجات المخصصة</div>
+<div class="value" style="color: #11b76b;">${customProductsCount}</div>
+</div>
+<div class="stat-card">
+<div class="label">حالة Firebase</div>
+<div class="value">${firebaseEnabled}</div>
+</div>
+<div class="stat-card">
+<div class="label">آخر تحديث</div>
+<div class="value" style="font-size: 0.9em;">${new Date().toLocaleTimeString('ar-SA')}</div>
+</div>
+`;
+}
+
+// Search functionality
+document.getElementById('searchInput')?.addEventListener('input', renderPricesTable);
+
+    function importFromCSV() {
+      document.getElementById('jsonFile').click();
+    }
+
+    function exportAsJSON() {
+      const dataStr = JSON.stringify(pricesData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'prices_' + new Date().toISOString().split('T')[0] + '.json';
+      link.click();
+    }
+
+    function updateStats(productCount, activeCount) {
+      const statsContainer = document.getElementById('statsContainer');
+      if (!statsContainer) {
+        // Create stats container if it doesn't exist
+        const header = document.querySelector('header');
+        if (header) {
+          const container = document.createElement('div');
+          container.id = 'statsContainer';
+          container.className = 'stats';
+          header.appendChild(container);
+        }
+        return;
+      }
+
+      const firebaseEnabled = window.firebaseDB ? '✅ متصل' : '❌ غير متصل';
+      const customProductsCount = Object.keys(JSON.parse(localStorage.getItem('customProducts') || '{}')).length;
+      
+      statsContainer.innerHTML = `
+        <div class="stat-card">
+          <div class="label">إجمالي المنتجات</div>
+          <div class="value">${productCount}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">المنتجات المفعلة</div>
+          <div class="value" style="color: green;">${activeCount || 0}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">المنتجات المخصصة</div>
+          <div class="value" style="color: #11b76b;">${customProductsCount}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">حالة Firebase</div>
+          <div class="value">${firebaseEnabled}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">آخر تحديث</div>
+          <div class="value" style="font-size: 0.9em;">${new Date().toLocaleTimeString('ar-SA')}</div>
+        </div>
+      `;
+    }
+
+    // Search functionality
+    document.getElementById('searchInput')?.addEventListener('input', renderPricesTable);
+
+    // File input handler
+    document.getElementById('jsonFile')?.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        try {
+          const data = JSON.parse(event.target.result);
+          pricesData = { ...pricesData, ...data };
+          renderPricesTable();
+          Swal.fire({
+            icon: 'success',
+            title: 'تم الاستيراد',
+            text: 'تم استيراد الأسعار بنجاح',
+            timer: 2000
+          });
+        } catch (err) {
+          Swal.fire({
+            icon: 'error',
+            title: 'خطأ',
+            text: 'صيغة الملف غير صحيحة'
+          });
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    // Initialize on load
+    function initCategoryManagement() {
+      renderCategoryManagement();
+      window.addEventListener('DOMContentLoaded', () => {
+        renderCategoryManagement();
+      });
+    }
+
+    // Category Management Functions
+    const CATEGORIES = {
+      vegetables: { name: 'خضار', emoji: '🥬', label: 'الخضراوات' },
+      fruits: { name: 'فواكه', emoji: '🍎', label: 'الفواكه' },
+      herbs: { name: 'خضرة', emoji: '🌿', label: 'الأعشاب والخضرات الورقية' }
+    };
+
+    function getCategorySettings() {
+      const stored = localStorage.getItem('categorySettings');
+      if (stored) {
+        return JSON.parse(stored);
+      }
+      // Default: all categories enabled
+      return {
+        vegetables: true,
+        fruits: true,
+        herbs: true
+      };
+    }
+
+    function saveCategorySettings() {
+      const settings = {};
+      Object.keys(CATEGORIES).forEach(cat => {
+        const checkbox = document.getElementById(`category_${cat}`);
+        settings[cat] = checkbox ? checkbox.checked : false;
+      });
+      localStorage.setItem('categorySettings', JSON.stringify(settings));
+      
+      // Dispatch event to update main site
+      document.dispatchEvent(new CustomEvent('categories:updated', { detail: settings }));
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'تم الحفظ',
+        text: 'تم حفظ إعدادات الأصناف بنجاح',
+        timer: 2000
+      });
+    }
+
+    function enableAllCategories() {
+      Object.keys(CATEGORIES).forEach(cat => {
+        const checkbox = document.getElementById(`category_${cat}`);
+        if (checkbox) checkbox.checked = true;
+        const card = document.getElementById(`card_${cat}`);
+        if (card) {
+          card.classList.add('active');
+          card.classList.remove('inactive');
+        }
+      });
+    }
+
+    function disableAllCategories() {
+      Object.keys(CATEGORIES).forEach(cat => {
+        const checkbox = document.getElementById(`category_${cat}`);
+        if (checkbox) checkbox.checked = false;
+        const card = document.getElementById(`card_${cat}`);
+        if (card) {
+          card.classList.remove('active');
+          card.classList.add('inactive');
+        }
+      });
+    }
+
+    function toggleCategory(categoryId) {
+      const checkbox = document.getElementById(`category_${categoryId}`);
+      const card = document.getElementById(`card_${categoryId}`);
+      if (!checkbox || !card) return;
+
+      if (checkbox.checked) {
+        card.classList.add('active');
+        card.classList.remove('inactive');
+      } else {
+        card.classList.remove('active');
+        card.classList.add('inactive');
+      }
+    }
+
+    function getCategoryProductCount(categoryId) {
+      if (!PRODUCTS) return 0;
+      
+      let count = 0;
+      if (categoryId === 'vegetables') {
+        Object.entries(PRODUCTS).forEach(([id, product]) => {
+          if (id !== 'apple' && id !== 'orange' && id !== 'mandarin' && 
+              id !== 'lemon' && id !== 'lime' && id !== 'grapefruit' && 
+              id !== 'banana' && id !== 'grapes' && id !== 'mango' && 
+              id !== 'strawberry' && id !== 'watermelon' && id !== 'cantaloupe' && 
+              id !== 'melon' && id !== 'date' && id !== 'fig' && 
+              id !== 'pear' && id !== 'peach' && id !== 'apricot' && 
+              id !== 'plum' && id !== 'guava' && id !== 'pomegranate' && 
+              id !== 'cherry' && id !== 'kiwi' && id !== 'pineapple' && 
+              id !== 'coconut' && id !== 'avocado' && id !== 'blueberry' &&
+              id !== 'raspberry' && id !== 'blackberry' && 
+              product?.unit !== 'حزمة') {
+            count++;
+          }
+        });
+      } else if (categoryId === 'fruits') {
+        const fruitIds = new Set([
+          'apple', 'orange', 'mandarin', 'lemon', 'lime', 'grapefruit', 'banana',
+          'grapes', 'mango', 'strawberry', 'watermelon', 'cantaloupe', 'melon',
+          'date', 'fig', 'pear', 'peach', 'apricot', 'plum', 'guava', 'pomegranate',
+          'cherry', 'kiwi', 'pineapple', 'coconut', 'avocado', 'blueberry',
+          'raspberry', 'blackberry'
+        ]);
+        Object.entries(PRODUCTS).forEach(([id]) => {
+          if (fruitIds.has(id)) count++;
+        });
+      } else if (categoryId === 'herbs') {
+        Object.entries(PRODUCTS).forEach(([, product]) => {
+          if (product?.unit === 'حزمة') count++;
+        });
+      }
+      return count;
+    }
+
+    // Add بيض ابيض 30 قطعة product to PRODUCTS
+    if (typeof PRODUCTS !== 'undefined') {
+      PRODUCTS['white_eggs_30'] = {
+        label: '🥚 بيض ابيض 30 قطعة',
+        emoji: '🥚',
+        name: 'بيض ابيض 30 قطعة',
+        unit: 'كرتونة',
+        unitPrice: 0,
+        imageUrl: 'https://res.cloudinary.com/drpy87v0r/image/upload/q_auto/f_auto/v1775778266/485186370_1075593227918920_2559877654956302151_n_kufymo.jpg'
+      };
+    }
+
+    function renderCategoryManagement() {
+      const grid = document.getElementById('categoriesGrid');
+      if (!grid) return;
+
+      const settings = getCategorySettings();
+
+      grid.innerHTML = Object.entries(CATEGORIES).map(([id, cat]) => {
+        const count = getCategoryProductCount(id);
+        const isActive = settings[id] !== false;
+        
+        return `
+          <div class="category-card ${isActive ? 'active' : 'inactive'}" id="card_${id}">
+            <div class="category-toggle">
+              <input type="checkbox" id="category_${id}" ${isActive ? 'checked' : ''} 
+                     onchange="toggleCategory('${id}')">
+              <label for="category_${id}">
+                ${cat.emoji} ${cat.name}
+              </label>
+            </div>
+            <div class="category-count">
+              📊 ${count} منتج
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', async () => {
+      // Wait for admin authentication to complete
+      const hasAccess = await adminAuth.ensureAdminAccess();
+      
+      if (!hasAccess) {
+        console.error('❌ Admin access denied');
+        // Admin auth will show login form
+        return;
+      }
+
+      console.log('='.repeat(60));
+      console.log('🔄 جاري تحميل صفحة إدارة الأسعار');
+      console.log('='.repeat(60));
+      
+      // Verify PRODUCTS is loaded
+      if (!window.PRODUCTS || typeof window.PRODUCTS !== 'object') {
+        console.error('❌ PRODUCTS not loaded from config.js!');
+        Swal.fire({
+          icon: 'error',
+          title: 'خطأ في التحميل',
+          text: 'فشل تحميل بيانات المنتجات الأساسية. حاول تحديث الصفحة.'
+        });
+        return;
+      }
+
+      console.log(`✅ PRODUCTS loaded with ${Object.keys(window.PRODUCTS).length} items`);
+      
+      // Initialize price control
+      initializePriceControl();
+      initCategoryManagement();
+      
+      console.log('='.repeat(60));
+      console.log('✅ تم جاهزية صفحة الإدارة');
+      console.log('='.repeat(60));
+    });
+  </script>
+</body>
+</html>

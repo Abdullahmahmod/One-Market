@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Dashboard | One Market</title>
+  <link rel="icon" type="image/svg+xml" href="../logo.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="chart.umd.js" defer></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="dashboard-admin-styles.css">
+</head>
+<body class="adm-page">
+  <a class="adm-skip-link" href="#admMain">Skip to main content</a>
+
+  <header class="adm-shell__header" role="banner">
+    <div class="adm-shell__brand">
+      <h1 class="adm-brand__title">One Market</h1>
+      <p class="adm-brand__subtitle">Admin Dashboard</p>
+    </div>
+
+    <div class="adm-shell__actions">
+      <button id="themeToggle" class="adm-btn adm-btn--ghost" type="button" aria-pressed="false" aria-label="Toggle dark mode">
+        <span aria-hidden="true">Moon</span>
+        <span id="themeToggleText">Dark Mode</span>
+      </button>
+      <button id="lockSessionBtn" class="adm-btn adm-btn--ghost" type="button">Lock Session</button>
+    </div>
+  </header>
+
+  <nav class="adm-shell__nav" aria-label="Navigation">
+    <a href="../index.html">Home</a>
+    <a href="../shop.html">Shop</a>
+    <a href="../orders.html">Orders</a>
+    <a href="../cart.html">Cart</a>
+    <a href="dashboard.html" aria-current="page">Dashboard</a>
+  </nav>
+
+  <main id="admMain" class="adm-shell__main" tabindex="-1">
+    <section class="adm-hero" aria-labelledby="admHeroTitle">
+      <div>
+        <h2 id="admHeroTitle" class="adm-hero__title">Performance Overview</h2>
+        <p class="adm-hero__text">Real-time order statistics with Firebase sync and live updates.</p>
+      </div>
+      <div class="adm-hero__actions">
+        <button id="refreshDataBtn" class="adm-btn adm-btn--primary" type="button">
+          Refresh Data
+        </button>
+      </div>
+    </section>
+
+    <section class="adm-grid">
+      <article class="adm-panel">
+        <header class="adm-panel__head">
+          <h3 class="adm-panel__title">Key Metrics</h3>
+        </header>
+        <div class="adm-metrics">
+          <div class="adm-metric">
+            <span class="adm-metric__label">Total Orders</span>
+            <span class="adm-metric__value" id="totalOrders">-</span>
+          </div>
+          <div class="adm-metric">
+            <span class="adm-metric__label">Total Revenue</span>
+            <span class="adm-metric__value" id="totalRevenue">-</span>
+          </div>
+          <div class="adm-metric">
+            <span class="adm-metric__label">Avg Order Value</span>
+            <span class="adm-metric__value" id="avgOrderValue">-</span>
+          </div>
+          <div class="adm-metric">
+            <span class="adm-metric__label">Recurring Orders</span>
+            <span class="adm-metric__value" id="recurringOrders">-</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="adm-panel">
+        <header class="adm-panel__head">
+          <h3 class="adm-panel__title">Payment Methods Distribution</h3>
+        </header>
+        <div class="adm-chart-container">
+          <canvas id="paymentMethodChart"></canvas>
+        </div>
+      </article>
+
+      <article class="adm-panel">
+        <header class="adm-panel__head">
+          <h3 class="adm-panel__title">Order Status Distribution</h3>
+        </header>
+        <div class="adm-chart-container">
+          <canvas id="orderStatusChart"></canvas>
+        </div>
+      </article>
+
+      <article class="adm-panel">
+        <header class="adm-panel__head">
+          <h3 class="adm-panel__title">Price Control Overview</h3>
+        </header>
+        <div class="adm-metrics">
+          <div class="adm-metric">
+            <span class="adm-metric__label">Active Products</span>
+            <span class="adm-metric__value" id="activeProducts">-</span>
+          </div>
+          <div class="adm-metric">
+            <span class="adm-metric__label">Avg Product Price</span>
+            <span class="adm-metric__value" id="avgProductPrice">-</span>
+          </div>
+        </div>
+        <div id="priceControlSummary"></div>
+      </article>
+
+      <article class="adm-panel adm-panel--full">
+        <header class="adm-panel__head">
+          <h3 class="adm-panel__title">Recent Orders</h3>
+          <p id="lastUpdateLabel" class="adm-panel__meta">-</p>
+        </header>
+
+        <div class="adm-table-wrap">
+          <table class="adm-table">
+            <caption class="adm-sr-only">Recent Orders Table</caption>
+            <thead>
+              <tr>
+                <th scope="col">Order ID</th>
+                <th scope="col">Customer</th>
+                <th scope="col">Customer Type</th>
+                <th scope="col">Phone</th>
+                <th scope="col">Products</th>
+                <th scope="col">Amount</th>
+                <th scope="col">Details</th>
+                <th scope="col">Status</th>
+                <th scope="col">Payment</th>
+                <th scope="col">Date</th>
+              </tr>
+            </thead>
+            <tbody id="recentOrdersBody"></tbody>
+          </table>
+        </div>
+
+        <p id="recentOrdersEmptyState" class="adm-empty" hidden>No orders recorded yet.</p>
+      </article>
+
+      <article class="adm-panel">
+        <header class="adm-panel__head">
+          <h3 class="adm-panel__title">Quick Summary</h3>
+        </header>
+        <ul id="summaryList" class="adm-summary-list" aria-live="polite"></ul>
+      </article>
+
+      <article class="adm-panel adm-panel--full">
+        <header class="adm-panel__head">
+          <h3 class="adm-panel__title">Order Management</h3>
+          <p class="adm-panel__meta">View and modify order status and delete orders</p>
+        </header>
+        <div class="adm-table-wrap" id="ordersTableDiv"></div>
+        <p id="ordersEmptyState" class="adm-empty" hidden>No orders.</p>
+      </article>
+
+      <article class="adm-panel adm-panel--full">
+        <header class="adm-panel__head">
+          <h3 class="adm-panel__title">Current Cart</h3>
+          <p class="adm-panel__meta">Live view of items currently in customer cart</p>
+        </header>
+        <div id="cartSnapshot"></div>
+      </article>
+    </section>
+  </main>
+
+  <div id="admLiveRegion" class="adm-sr-only" aria-live="polite"></div>
+
+  <!-- Firebase Configuration -->
+  <script src="../js/firebase-config.js"></script>
+  <script src="../js/firebase-service.js"></script>
+  <script src="../js/firebase-auth.js"></script>
+  <script src="../js/firebase-bridge.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="dashboard-charts.js" defer></script>
+  <!-- Admin Control Managers -->
+  <script src="admin-auth.js" defer></script>
+  <script src="price-manager.js" defer></script>
+  <script src="orders-manager.js" defer></script>
+  <script src="admin-init.js" defer></script>
+  <script src="dashboard.js" defer></script>
+</body>
+</html>
